@@ -1,0 +1,68 @@
+{
+  "manifestVersion": "1.0",
+  "storeListing": {
+    "distributionCountries": ["US", "IN"],
+    "locales": {
+      "en-US": {
+        "default": "DEFAULT",
+        "name": { "value": "KinLoop" },
+        "shortDescription": "Daily check-ins for aging parents by voice: medicine reminders, mood check-ins, and instant family alerts when it matters.",
+        "fullDescription": "KinLoop helps an elderly parent manage their day just by talking to Alexa, and gives their family a calm, accurate picture of how the day is going, with an alert the moment something needs attention.\n\nFor the parent at home:\n- \"Alexa, ask KinLoop what I need to do today.\" Hear today's medicines with times and whether they've been taken, appointments, and family messages.\n- \"I just took my blood pressure pill.\" KinLoop matches it to the schedule and marks the dose as taken. Saying it twice never double-counts.\n- \"I'm feeling okay, slept badly.\" A daily check-in of mood and sleep.\n- \"I'm feeling dizzy.\" Symptoms are recorded. Fixed safety rules, not AI, check for red flags such as chest pain, trouble breathing, a fall, fainting, confusion or stroke signs. A red flag alerts the family immediately, and Alexa tells the parent to call emergency services.\n- \"Ask my son to call me\" and \"Any messages from my daughter?\"\n\nFor the family, from their own Alexa:\n- \"How's Mom doing today?\" Doses taken or missed, the latest check-in, mood trend, alerts, and a short daily summary.\n- \"Tell Dad I'll visit on Sunday.\" The message is read out the next time the parent talks to Alexa.\n- \"Add Metformin 500 mg at 8 PM for Mom.\" Schedule changes are always read back and confirmed first.\n\nAlerts reach the family by email and SMS: a gentle reminder to the parent 60 minutes after a missed dose, a family alert at 120 minutes, no check-in by 11 AM, three low-mood days in a row, and any red-flag symptom. Every alert includes the reason and the numbers behind it.\n\nRules decide; AI only writes. Escalation is deterministic. Amazon Bedrock is used only to write the family's daily summary from logged facts, and it never gives medical advice.\n\nSetup: create a household at the KinLoop website, then link the parent's Alexa and each family member's Alexa with their KinLoop name and PIN.\n\nKinLoop is not a medical device and does not replace emergency services or medical advice. In an emergency, call your local emergency number.",
+        "examplePhrases": [
+          "Alexa, ask KinLoop what I need to do today",
+          "Alexa, tell KinLoop I just took my blood pressure pill",
+          "Alexa, ask KinLoop how Mom is doing today",
+          "Alexa, tell KinLoop to let Dad know I'll visit on Sunday"
+        ],
+        "privacyAndCompliance": {
+          "privacyPolicyUrl": "{{BASE_URL}}/privacy/",
+          "termsOfUseUrl": "{{BASE_URL}}/terms/"
+        },
+        "mediaAssets": {
+          "icons": {
+            "light": [
+              { "size": "72x72", "uri": "{{BASE_URL}}/addon/icon-light-72.png" },
+              { "size": "64x64", "uri": "{{BASE_URL}}/addon/icon-light-64.png" },
+              { "size": "88x88", "uri": "{{BASE_URL}}/addon/icon-light-88.png" },
+              { "size": "126x126", "uri": "{{BASE_URL}}/addon/icon-light-126.png" },
+              { "size": "180x180", "uri": "{{BASE_URL}}/addon/icon-light-180.png" },
+              { "size": "241x241", "uri": "{{BASE_URL}}/addon/icon-light-241.png" }
+            ],
+            "dark": [
+              { "size": "72x72", "uri": "{{BASE_URL}}/addon/icon-dark-72.png" },
+              { "size": "64x64", "uri": "{{BASE_URL}}/addon/icon-dark-64.png" },
+              { "size": "88x88", "uri": "{{BASE_URL}}/addon/icon-dark-88.png" },
+              { "size": "126x126", "uri": "{{BASE_URL}}/addon/icon-dark-126.png" },
+              { "size": "180x180", "uri": "{{BASE_URL}}/addon/icon-dark-180.png" },
+              { "size": "241x241", "uri": "{{BASE_URL}}/addon/icon-dark-241.png" }
+            ]
+          },
+          "carouselImages": [
+            {
+              "size": "600x900",
+              "uri": "{{BASE_URL}}/addon/carousel-1.png",
+              "altText": "KinLoop on an Echo Show: today's medicines for Kamala with times and status chips (taken, due now, later), and a card showing a family member asking how Mom is doing."
+            }
+          ],
+          "bannerImages": [
+            {
+              "size": "1200x600",
+              "uri": "{{BASE_URL}}/addon/banner-1.png",
+              "altText": "KinLoop logo with the tagline: your parents' daily check-in, through Alexa."
+            }
+          ]
+        }
+      }
+    }
+  },
+  "integrations": [
+    {
+      "type": "MCP",
+      "config": {
+        "endpoints": {
+          "default": { "type": "HTTPS", "uri": "{{BASE_URL}}/mcp" }
+        }
+      }
+    }
+  ]
+}

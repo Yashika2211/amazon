@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  KinLoop: Alexa+ MCP add-on for elder daily check-ins. Lambda (MCP server, OAuth, API, web),
+  DynamoDB single table, EventBridge Scheduler escalation, SNS alerts, Bedrock digest.
+
+Parameters:
+  AlexaClientId:
+    Type: String
+    Default: alexa-kinloop
+    Description: OAuth client_id you register with alexa-ai configure-account-linking.
+  AlexaClientSecretParam:
+    Type: String
+    Default: /kinloop/alexa-client-secret
+    Description: SSM SecureString parameter holding the Alexa OAuth client secret (created by scripts/deploy.sh).
+  AlexaRedirectUris:
+    Type: String
+    Default: ""
+    Description: Comma-separated redirect URIs from the Alexa+ Developer Hub.
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Email address subscribed to the SNS alert topic (confirm the subscription email).
+  SmsEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+  TelegramBotTokenParam:
+    Type: String
+    Default: ""
+    Description: Optional SSM SecureString parameter holding a Telegram bot token.
+  DemoMode:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Enables the simulator and demo reset endpoints for the fictional demo household.
+  DemoLocalTime:
+    Type: String
+    Default: ""
+    Description: Pins the household clock to this local HH:MM for repeatable demo recordings. Empty = real time.
+  DemoCaregiverEmail:
+    Type: String
+    Default: ""
+  DemoCaregiverPhone:
+    Type: String
+    Default: ""
+    Description: E.164 phone number for demo SMS alerts, e.g. +9198XXXXXXXX.
+  BedrockModelId:
+    Type: String
+    Default: us.anthropic.claude-haiku-4-5-20251001-v1:0
+  BedrockFallbackModelId:
+    Type: String
+    Default: us.amazon.nova-lite-v1:0
+
+Conditions:
+  HasEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+  HasTelegram: !Not [!Equals [!Ref TelegramBotTokenParam, ""]]
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    MemorySize: 1024
+    Timeout: 29
+    Tracing: Active
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref Table
+        SNS_TOPIC_ARN: !Ref AlertTopic
+        SMS_ENABLED: !Ref SmsEnabled
+        TELEGRAM_BOT_TOKEN_PARAM: !Ref TelegramBotTokenParam
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        BEDROCK_FALLBACK_MODEL_ID: !Ref BedrockFallbackModelId
+        DEMO_MODE: !Ref DemoMode
+        DEMO_LOCAL_TIME: !Ref DemoLocalTime
+        DEMO_CAREGIVER_EMAIL: !Ref DemoCaregiverEmail
+        DEMO_CAREGIVER_PHONE: !Ref DemoCaregiverPhone
+        LOG_LEVEL: info
+
+Resources:
+  # ───────────── Data ─────────────
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: ttl, Enabled: true }
+      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+      SSESpecification: { SSEEnabled: true }
+
+  # ───────────── Alerts ─────────────
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: KinLoop
+      KmsMasterKeyId: alias/aws/sns
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  # ───────────── Bedrock digest (async) ─────────────
+  DigestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Writes the warm daily family digest with Amazon Bedrock (Converse) and stores it in DynamoDB.
+      CodeUri: .build/digest/
+      Handler: index.handler
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - arn:aws:bedrock:*::foundation-model/anthropic.claude-*
+                - arn:aws:bedrock:*::foundation-model/amazon.nova-*
+                - !Sub arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*
+
+  # ───────────── API: MCP + OAuth + REST + web ─────────────
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: KinLoop MCP server (Streamable HTTP, stateless), OAuth 2.1 authorization server, dashboard API and web app.
+      CodeUri: .build/api/
+      Handler: index.handler
+      Environment:
+        Variables:
+          ALEXA_CLIENT_ID: !Ref AlexaClientId
+          ALEXA_CLIENT_SECRET_PARAM: !Ref AlexaClientSecretParam
+          ALEXA_REDIRECT_URIS: !Ref AlexaRedirectUris
+          DIGEST_FUNCTION_NAME: !Ref DigestFunction
+      FunctionUrlConfig:
+        AuthType: NONE
+        InvokeMode: BUFFERED
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - SNSPublishMessagePolicy: { TopicName: !GetAtt AlertTopic.TopicName }
+        - LambdaInvokePolicy: { FunctionName: !Ref DigestFunction }
+        - Statement:
+            - Effect: Allow
+              Action: [ssm:GetParameter]
+              Resource:
+                - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AlexaClientSecretParam}
+                - !If
+                  - HasTelegram
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${TelegramBotTokenParam}
+                  - !Ref AWS::NoValue
+            # Direct SMS to a phone number has no resource ARN, so IAM only accepts "*" here.
+            # Drop this statement (and keep SmsEnabled=false) if you only use topic email.
+            - Effect: Allow
+              Action: [sns:Publish]
+              Resource: "*"
+            # The simulated Alexa+ client orchestrates tool calls with Bedrock (demo only).
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource:
+                - arn:aws:bedrock:*::foundation-model/anthropic.claude-*
+                - arn:aws:bedrock:*::foundation-model/amazon.nova-*
+                - !Sub arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*
+
+  # ───────────── Escalation: EventBridge Scheduler every 10 minutes ─────────────
+  EscalationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Runs the deterministic escalation rules for every household.
+      CodeUri: .build/escalation/
+      Handler: index.handler
+      Timeout: 120
+      Environment:
+        Variables:
+          DIGEST_FUNCTION_NAME: !Ref DigestFunction
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - SNSPublishMessagePolicy: { TopicName: !GetAtt AlertTopic.TopicName }
+        - LambdaInvokePolicy: { FunctionName: !Ref DigestFunction }
+        - Statement:
+            # Direct SMS to a phone number: see the note on ApiFunction.
+            - Effect: Allow
+              Action: [sns:Publish]
+              Resource: "*"
+            - !If
+              - HasTelegram
+              - Effect: Allow
+                Action: [ssm:GetParameter]
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${TelegramBotTokenParam}
+              - !Ref AWS::NoValue
+      Events:
+        Every10Minutes:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(10 minutes)
+            Description: KinLoop escalation pass (missed doses, missing check-ins, low-mood streaks)
+            RetryPolicy: { MaximumRetryAttempts: 0 }
+
+Outputs:
+  BaseUrl:
+    Description: Public HTTPS origin (dashboard, OAuth, metadata)
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  McpServerUrl:
+    Description: Use this as --mcp-server-url for alexa-ai new mcp
+    Value: !Sub "${ApiFunctionUrl.FunctionUrl}mcp"
+  TableName:
+    Value: !Ref Table
+  AlertTopicArn:
+    Value: !Ref AlertTopic
