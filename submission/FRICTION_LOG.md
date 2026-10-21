@@ -66,3 +66,18 @@ Real problems hit while building KinLoop, in the order we hit them. Severity sca
 - **Severity:** low.
 - **Workaround:** Registered the resource with the v1 SDK's `registerResource` and the MIME type `text/html;profile=mcp-app`. Implemented the view handshake (`ui/initialize`, `ui/notifications/initialized`, `ui/notifications/tool-result`) by hand, following ext-apps' published spec types. The card is now 3.1 KiB.
 - **Suggestion:** State which MCP SDK major version the Alexa+ MCP Apps support targets, and publish a dependency-free view snippet for simple cards.
+
+### 8. A new AWS account can sign in to the CLI but can't use any service until verification finishes
+- **Task:** Deploy the stack (`pnpm deploy:aws`) to a newly created AWS account in us-east-1.
+- **Steps:** `aws login --profile kinloop` succeeded and `aws sts get-caller-identity` returned the account. Then: a Bedrock `converse` call, `ssm put-parameter`, and `lambda list-functions`, `dynamodb list-tables`, `cloudformation list-stacks`, `sns list-topics` and `s3api list-buckets`.
+- **Expected:** Either the services work, or one clear "account activation pending" error.
+- **Actual:** Each service failed with a different message for the same root cause:
+  - Bedrock: `AccessDeniedException: Your account is currently being verified… normally takes less than 2 hours`.
+  - Lambda, DynamoDB and SSM: `SubscriptionRequiredException`.
+  - CloudFormation and SNS: `OptInRequired`.
+  - S3: `NotSignedUp`.
+  
+  Signing in to the CLI gives no hint that the account isn't active.
+- **Severity:** blocker for deployment during a time-boxed hackathon.
+- **Workaround:** Kept building and testing locally (the in-memory store and the template digest need no AWS). The deploy script is idempotent, so it re-runs as soon as activation completes.
+- **Suggestion:** Make `aws login` and `sts get-caller-identity` warn when the account's activation is pending. Return one consistent error code (with the expected wait time) across services.

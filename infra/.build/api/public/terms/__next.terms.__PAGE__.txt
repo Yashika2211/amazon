@@ -1,0 +1,35 @@
+1:"$Sreact.fragment"
+2:"/_next/static/chunks/15n5bkl8u-sj1.js"
+3:I[53151,["$2"],"default"]
+4:I[92455,["$2"],"default"]
+b:"/_next/static/chunks/04jt-jdklbip8.js"
+c:I[83565,["$2","$b"],""]
+13:"ViewportBoundary"
+14:I[68511,["$2"],"$13"]
+15:"MetadataBoundary"
+16:I[68511,["$2"],"$15"]
+17:"$Sreact.suspense"
+18:I[12332,["$2"],"IconMark"]
+:HL["/_next/static/chunks/0mktuiklxptas.css","style"]
+:HL["https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap","style"]
+6:X
+9:X
+9:C
+a:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[["$","div",null,{"className":"wrap","children":[["$","header",null,{"className":"topbar","children":[["$","$Lc",null,{"href":"/","className":"brand","children":"KinLoop"}],["$","nav",null,{"className":"nav","aria-label":"Main","children":[["$","$Lc",null,{"href":"/dashboard/","children":"Dashboard"}],["$","$Lc",null,{"href":"/simulator/","children":"Live demo"}],["$","$Lc",null,{"href":"/setup/","children":"Set up"}],["$","$Lc",null,{"href":"/privacy/","children":"Privacy"}]]}]]}],["$","main",null,{"children":["$","article",null,{"className":"card stack","style":{"maxWidth":820},"children":[["$","h1",null,{"children":"Terms of use"}],["$","p",null,{"className":"muted","children":"Last updated October 21, 2026."}],["$","p",null,{"children":"KinLoop is an open-source hackathon project, provided under the MIT License, “as is”, without warranty of any kind."}],["$","h2",null,{"children":"Not a medical device"}],["$","p",null,{"children":"KinLoop is not a medical device. It does not diagnose, treat or monitor any condition, and it does not replace emergency services, doctors or pharmacists. It never calls emergency services. In an emergency, call 112 (India) or 911 (US) yourself."}],["$","h2",null,{"children":"Alerts can fail"}],["$","p",null,{"children":"Alerts depend on Alexa, the internet, AWS, email and SMS providers. Any of them can be delayed or fail. Don't rely on KinLoop as the only way someone will know you need help."}],["$","h2",null,{"children":"Your responsibilities"}],["$","ul",null,{"children":[["$","li",null,{"children":"Only set up KinLoop for a person who has agreed to it."}],["$","li",null,{"children":"Keep sign-in names and PINs private."}],["$","li",null,{"children":"Medicine schedules you enter are your responsibility; check them with a doctor or pharmacist."}]]}],["$","h2",null,{"children":"Demo data"}],["$","p",null,{"children":"The demo household (“Kamala” and “Arjun”) is fictional. Don't enter real health information into the public demo."}],["$","h2",null,{"children":"Changes"}],["$","p",null,{"children":"These terms may change; the date above shows the latest version."}]]}]}],["$","footer",null,{"className":"safety","children":[["$","strong",null,{"children":"KinLoop is not a medical device and does not replace emergency services."}]," In an emergency, call 112 (India) or 911 (US). KinLoop's alerts are rule-based; the AI only writes summaries.","$Ld","$Le"," · ","$Lf"," · Demo data is fictional."]}]]}],["$L10"],"$L11"]}],"p":"$@12","v":null,"s":"$6"}}]]
+7:[["children",{"s":"terms","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}]}]]}],"p":"$@8","v":"$9","s":"$6"},"c":"$Qa"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0mktuiklxptas.css","precedence":"next"}],["$","script","script-0",{"src":"/_next/static/chunks/15n5bkl8u-sj1.js","async":true}]],["$","html",null,{"lang":"en","children":[["$","head",null,{"children":[["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":""}],["$","link",null,{"href":"https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap","rel":"stylesheet"}]]}],["$","body",null,{"children":["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}],"notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]]}]}]]}]]}],"p":"$@5","v":null,"s":"$6"},"c":"$Q7"},"h":{"r":["$","$1","h",{"children":[null,["$","$L14",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","$L16",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$17",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Terms of use · KinLoop"}],["$","meta","1",{"name":"description","content":"Your parents' daily check-in, through Alexa."}],["$","link","2",{"rel":"icon","href":"/icon.svg"}],["$","$L18","3",{}]]}]}],null]}],null]}],"p":"$@19","v":null,"s":"$6"}},"a":"$@1a","u":"$@1b","b":"eGShg7SnFccPnyovYwiL8"}
+1c:I[68511,["$2"],"OutletBoundary"]
+d:["$","br",null,{}]
+e:["$","$Lc",null,{"href":"/privacy/","children":"Privacy policy"}]
+f:["$","$Lc",null,{"href":"/terms/","children":"Terms of use"}]
+10:["$","script","script-0",{"src":"/_next/static/chunks/04jt-jdklbip8.js","async":true}]
+11:["$","$L1c",null,{"children":["$","$17",null,{"name":"Next.MetadataOutlet","children":"$@1d"}]}]
+6:300
+1d:null
+1b:true
+6:C
+1a:0
+8:"$undefined"
+5:"$undefined"
+19:"$undefined"
+12:"$undefined"

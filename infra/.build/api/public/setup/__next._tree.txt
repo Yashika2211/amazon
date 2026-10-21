@@ -1,0 +1,5 @@
+:HL["/_next/static/chunks/0mktuiklxptas.css","style"]
+:HL["https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap","style"]
+2:[["children",{"s":"__PAGE__","h":160}]]
+1:[["children",{"s":"setup","h":96,"c":"$Q2"}]]
+0:{"b":"eGShg7SnFccPnyovYwiL8","t":{"t":{"s":"","h":80,"c":"$Q1"}}}

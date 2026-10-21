@@ -1,0 +1,43 @@
+1:"$Sreact.fragment"
+2:"/_next/static/chunks/15n5bkl8u-sj1.js"
+3:I[53151,["$2"],"default"]
+4:I[92455,["$2"],"default"]
+b:"/_next/static/chunks/04jt-jdklbip8.js"
+c:I[83565,["$2","$b"],""]
+1b:"ViewportBoundary"
+1c:I[68511,["$2"],"$1b"]
+1d:"MetadataBoundary"
+1e:I[68511,["$2"],"$1d"]
+1f:"$Sreact.suspense"
+20:I[12332,["$2"],"IconMark"]
+:HL["/_next/static/chunks/0mktuiklxptas.css","style"]
+:HL["https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap","style"]
+6:X
+9:X
+9:C
+a:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[["$","div",null,{"className":"wrap","children":[["$","header",null,{"className":"topbar","children":[["$","$Lc",null,{"href":"/","className":"brand","children":"KinLoop"}],["$","nav",null,{"className":"nav","aria-label":"Main","children":[["$","$Lc",null,{"href":"/dashboard/","children":"Dashboard"}],["$","$Lc",null,{"href":"/simulator/","children":"Live demo"}],["$","$Lc",null,{"href":"/setup/","children":"Set up"}],["$","$Lc",null,{"href":"/privacy/","children":"Privacy"}]]}]]}],["$","main",null,{"children":["$","article",null,{"className":"card stack","style":{"maxWidth":820},"children":[["$","h1",null,{"children":"Privacy policy"}],["$","p",null,{"className":"muted","children":"Last updated October 21, 2026."}],["$","p",null,{"children":"KinLoop is a hackathon project that helps an elderly parent manage their day by voice and keeps their family informed. This page explains what it stores, why, and for how long."}],["$","h2",null,{"children":"What we store"}],["$","ul",null,{"children":[["$","li",null,{"children":[["$","b",null,{"children":"Household and people:"}]," household name, time zone, emergency number, first names, relation (for example “son”), sign-in names, and a salted scrypt hash of each PIN (never the PIN itself). Optional email, phone or Telegram chat ID for family alerts."]}],["$","li",null,{"children":[["$","b",null,{"children":"Medicine schedule:"}]," medicine names, doses, purposes and times."]}],["$","li",null,{"children":[["$","b",null,{"children":"Daily records:"}]," doses logged, check-ins (mood 1 to 5, sleep, an optional note), symptoms described by voice, family messages, alerts, and the daily family summary."]}],["$","li",null,{"children":[["$","b",null,{"children":"Sign-in artifacts:"}]," OAuth authorization codes, access tokens and refresh tokens, stored only as SHA-256 hashes."]}]]}],["$","h2",null,{"children":"How long"}],["$","ul",null,{"children":[["$","li",null,{"children":["Doses, check-ins, symptoms, alerts and daily summaries: deleted automatically after ",["$","b",null,{"children":"90 days"}]," (DynamoDB time-to-live)."]}],["$","li",null,{"children":["Family messages and reminders: deleted after ",["$","b",null,{"children":"30 days"}],"."]}],["$","li",null,{"children":"Authorization codes: 5 minutes. Access tokens: 1 hour. Refresh tokens: 90 days, or sooner if used (they rotate)."}],["$","li",null,{"children":"Household, people and medicine schedule: until the household is deleted. Email us to delete a household."}]]}],"$Ld","$Le","$Lf","$L10","$L11","$L12","$L13","$L14","$L15","$L16"]}]}],"$L17"]}],["$L18"],"$L19"]}],"p":"$@1a","v":null,"s":"$6"}}]]
+7:[["children",{"s":"privacy","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}]}]]}],"p":"$@8","v":"$9","s":"$6"},"c":"$Qa"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0mktuiklxptas.css","precedence":"next"}],["$","script","script-0",{"src":"/_next/static/chunks/15n5bkl8u-sj1.js","async":true}]],["$","html",null,{"lang":"en","children":[["$","head",null,{"children":[["$","link",null,{"rel":"preconnect","href":"https://fonts.googleapis.com"}],["$","link",null,{"rel":"preconnect","href":"https://fonts.gstatic.com","crossOrigin":""}],["$","link",null,{"href":"https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap","rel":"stylesheet"}]]}],["$","body",null,{"children":["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}],"notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]]}]}]]}]]}],"p":"$@5","v":null,"s":"$6"},"c":"$Q7"},"h":{"r":["$","$1","h",{"children":[null,["$","$L1c",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","$L1e",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$1f",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Privacy policy · KinLoop"}],["$","meta","1",{"name":"description","content":"Your parents' daily check-in, through Alexa."}],["$","link","2",{"rel":"icon","href":"/icon.svg"}],["$","$L20","3",{}]]}]}],null]}],null]}],"p":"$@21","v":null,"s":"$6"}},"a":"$@22","u":"$@23","b":"eGShg7SnFccPnyovYwiL8"}
+24:I[68511,["$2"],"OutletBoundary"]
+d:["$","h2",null,{"children":"How it's used"}]
+e:["$","p",null,{"children":"Only to run KinLoop for your household: answering Alexa requests, deciding alerts with fixed rules, sending those alerts to your family, and writing the daily summary. The summary is generated by Amazon Bedrock from that day's logged facts; Bedrock does not use your data to train models. We don't sell or share data, and there are no ads or analytics trackers."}]
+f:["$","h2",null,{"children":"Security"}]
+10:["$","p",null,{"children":"Data is encrypted at rest in Amazon DynamoDB and in transit over HTTPS. Every request is scoped to the household of the signed-in person. Health notes and symptom text are redacted from application logs."}]
+11:["$","h2",null,{"children":"Alexa"}]
+12:["$","p",null,{"children":"Alexa sends KinLoop the request it has understood (for example, which medicine you took). Amazon's handling of your voice recordings is covered by Amazon's own privacy notice."}]
+13:["$","h2",null,{"children":"Not a medical device"}]
+14:["$","p",null,{"children":"KinLoop is not a medical device and does not replace emergency services or medical advice. In an emergency, call 112 (India) or 911 (US)."}]
+15:["$","h2",null,{"children":"Contact"}]
+16:["$","p",null,{"children":"Open an issue at github.com/Yashika2211/amazon."}]
+17:["$","footer",null,{"className":"safety","children":[["$","strong",null,{"children":"KinLoop is not a medical device and does not replace emergency services."}]," In an emergency, call 112 (India) or 911 (US). KinLoop's alerts are rule-based; the AI only writes summaries.",["$","br",null,{}],["$","$Lc",null,{"href":"/privacy/","children":"Privacy policy"}]," · ",["$","$Lc",null,{"href":"/terms/","children":"Terms of use"}]," · Demo data is fictional."]}]
+18:["$","script","script-0",{"src":"/_next/static/chunks/04jt-jdklbip8.js","async":true}]
+19:["$","$L24",null,{"children":["$","$1f",null,{"name":"Next.MetadataOutlet","children":"$@25"}]}]
+6:300
+25:null
+23:true
+6:C
+22:0
+8:"$undefined"
+5:"$undefined"
+21:"$undefined"
+1a:"$undefined"
