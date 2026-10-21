@@ -1,0 +1,27 @@
+{
+  "name": "kinloop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KinLoop: an Alexa+ add-on (MCP server) for daily elder check-ins and calm family alerts.",
+  "license": "MIT",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @kinloop/web build && pnpm --filter @kinloop/mcp-server dev",
+    "dev:server": "pnpm --filter @kinloop/mcp-server dev",
+    "dev:web": "pnpm --filter @kinloop/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:coverage": "pnpm --filter @kinloop/core test:coverage",
+    "typecheck": "pnpm -r typecheck",
+    "seed": "pnpm --filter @kinloop/mcp-server seed",
+    "latency": "pnpm --filter @kinloop/mcp-server latency",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  }
+}
