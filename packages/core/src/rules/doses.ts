@@ -83,7 +83,8 @@ export function medicationMatches(med: Medication, query: string): boolean {
   const name = med.name.toLowerCase();
   const purpose = (med.purpose ?? "").toLowerCase();
   return q.some((t) => {
-    if (name.includes(t) || (t.length >= 4 && t.startsWith(name.slice(0, 4)))) return true;
+    if (t.length >= 3 && name.includes(t)) return true;
+    if (t.length >= 4 && t.startsWith(name.slice(0, 4))) return true;
     const expanded = SYNONYMS[t] ?? t;
     return purpose.length > 0 && purpose.includes(expanded);
   });

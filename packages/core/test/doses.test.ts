@@ -38,6 +38,8 @@ describe("medicationMatches", () => {
     expect(medicationMatches(metf, "sugar medicine")).toBe(true);
     expect(medicationMatches(ator, "sugar medicine")).toBe(false);
     expect(medicationMatches(amlo, "my pill")).toBe(false);
+    // Short words must not substring-match names ("in" is inside "Metformin").
+    expect(medicationMatches(metf, "in it")).toBe(false);
   });
 });
 

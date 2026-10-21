@@ -15,6 +15,16 @@ import type { Item, Table } from "./table.js";
 /** Health records are kept for 90 days, OAuth artifacts until they expire. Stated on the privacy page. */
 export const HEALTH_RETENTION_DAYS = 90;
 
+export interface Appointment {
+  id: string;
+  householdId: string;
+  /** Local "YYYY-MM-DD". */
+  date: string;
+  /** Local "HH:MM". */
+  time: string;
+  title: string;
+}
+
 export interface Credential {
   username: string;
   householdId: string;
@@ -178,6 +188,24 @@ export class Store {
       this.table.query(hh(householdId), "MSG#reminder:"),
     ]);
     return new Set([...alerts.map((a) => a.incidentKey as string), ...msgs.map((m) => m.id as string)]);
+  }
+
+  // ---- appointments ----
+  async putAppointment(a: Appointment): Promise<void> {
+    await this.table.put({ pk: hh(a.householdId), sk: `APPT#${a.date}#${a.time}#${a.id}`, ...a, ttl: healthTtl() });
+  }
+
+  async listAppointments(householdId: string, date: string): Promise<Appointment[]> {
+    return stripAll<Appointment>(await this.table.query(hh(householdId), `APPT#${date}#`));
+  }
+
+  // ---- last activity (lets readers tell whether the stored digest is stale) ----
+  async touchActivity(householdId: string, at: string): Promise<void> {
+    await this.table.put({ pk: hh(householdId), sk: "ACTIVITY", at });
+  }
+
+  async lastActivity(householdId: string): Promise<string | undefined> {
+    return (await this.table.get(hh(householdId), "ACTIVITY"))?.at as string | undefined;
   }
 
   // ---- digests ----

@@ -145,6 +145,13 @@ export async function seedDemo(store: Store, opts: SeedOptions): Promise<void> {
     text: "Good morning Ma! Priya says hello. I'll call you tonight after dinner.",
     createdAt: new Date(opts.now.getTime() - 50 * 60000).toISOString(),
   });
+  await store.putAppointment({
+    id: "appt-seed-1",
+    householdId: household.id,
+    date: today,
+    time: "16:30",
+    title: "an eye check-up with Dr. Mehta",
+  });
   const yesterday = addDays(today, -1);
   await store.putDigest({
     householdId: household.id,

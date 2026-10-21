@@ -57,3 +57,12 @@ Real problems hit while building KinLoop, in the order we hit them. Severity sca
 - **Severity:** low, because the SDK negotiates down.
 - **Workaround:** Use the official SDK's negotiation, and add a test that sends the exact Alexa+ `initialize` payload and expects `2025-03-26` back.
 - **Suggestion:** Say on the requirements page which versions the client actually offers.
+
+### 7. `@modelcontextprotocol/ext-apps` 2.x server helpers don't type-check against the stable v1 MCP SDK
+- **Task:** Register the Echo Show card as an MCP Apps resource with `registerAppResource`.
+- **Steps:** `@modelcontextprotocol/sdk@1.32.1` + `@modelcontextprotocol/ext-apps@2.0.3`, then `registerAppResource(server, name, uri, { description }, cb)`.
+- **Expected:** Works with the `McpServer` the Alexa+ docs point to.
+- **Actual:** `TS2353: 'description' does not exist in type 'McpUiAppResourceConfig'`. ext-apps 2.x depends on the v2 `@modelcontextprotocol/core` and `client` packages, so its types don't line up with a v1 `McpServer`. Bundling the `App` view class into the card produced a 590 KiB HTML resource, which is too heavy for a status card.
+- **Severity:** low.
+- **Workaround:** Registered the resource with the v1 SDK's `registerResource` and the MIME type `text/html;profile=mcp-app`. Implemented the view handshake (`ui/initialize`, `ui/notifications/initialized`, `ui/notifications/tool-result`) by hand, following ext-apps' published spec types. The card is now 3.1 KiB.
+- **Suggestion:** State which MCP SDK major version the Alexa+ MCP Apps support targets, and publish a dependency-free view snippet for simple cards.
