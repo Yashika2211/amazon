@@ -8,6 +8,7 @@ KinLoop is an Alexa+ add-on built as a self-hosted **MCP server** (spec 2025-11-
 
 > KinLoop is not a medical device and does not replace emergency services. The demo household ("Kamala, 72, Jaipur" and her son "Arjun, Bengaluru") is fictional.
 
+- **Live:** [https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/simulator/](https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/simulator/) (demo) · MCP endpoint `https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/mcp`
 - **Track:** Alexa+ · **Mini challenge:** AWS Builder
 - Submission kit: [`submission/`](submission/) · Friction log: [`FRICTION_LOG.md`](FRICTION_LOG.md) · Build plan: [`PLAN.md`](PLAN.md)
 
@@ -99,7 +100,7 @@ Connect to `http://localhost:8787/mcp` (Streamable HTTP). For a quick bearer tok
 ## Tests
 
 ```bash
-pnpm test                                   # rules (52) + MCP/OAuth integration (40)
+pnpm test                                   # rules (52) + MCP/OAuth/Lambda/digest integration (46)
 pnpm test:coverage                          # rules engine, 100% lines/branches/functions
 pnpm --filter @kinloop/web test:e2e         # Playwright smoke: landing, privacy, red flag → phone, OAuth sign-in
 pnpm latency [baseUrl] [n]                  # real HTTP round trips; fails if any tool's p95 ≥ 500 ms
@@ -120,7 +121,26 @@ Requirements: the AWS CLI with credentials (`aws login`), the AWS SAM CLI, and B
 
 ```bash
 ALERT_EMAIL=you@example.com AWS_REGION=us-east-1 pnpm deploy:aws
+
+# AWS "new experience" projects are locked to one region. Ours is ap-southeast-2:
+AWS_REGION=ap-southeast-2 ALERT_EMAIL=you@example.com DEMO_LOCAL_TIME=08:20 \
+  BEDROCK_MODEL_ID=au.anthropic.claude-haiku-4-5-20251001-v1:0 \
+  BEDROCK_FALLBACK_MODEL_ID=apac.amazon.nova-lite-v1:0 pnpm deploy:aws
 ```
+
+**Measured in production (ap-southeast-2, DynamoDB, 30 calls per tool):**
+
+| Tool | Server p50 | Server p95 | Round trip p95 from a distant client |
+|---|---|---|---|
+| `get_today_plan` | 21 ms | 32 ms | 324 ms |
+| `log_medication` | 10 ms | 24 ms | 343 ms |
+| `daily_check_in` | 39 ms | 68 ms | 412 ms |
+| `play_family_messages` | 8 ms | 20 ms | 312 ms |
+| `get_parent_status` | 28 ms | 44 ms | 352 ms |
+| `send_message_to_parent` | 14 ms | 27 ms | 357 ms |
+| `update_medication_schedule` | 8 ms | 17 ms | 315 ms |
+
+Server time comes from CloudWatch `tool.ok` logs. Round trip is `pnpm latency` from a client far from Sydney, so most of it is network distance. Deploy in the region closest to Alexa+'s callers for production.
 
 [`scripts/deploy.sh`](scripts/deploy.sh) does the following:
 1. Builds the web app and the three Lambda bundles.

@@ -2,6 +2,7 @@
 
 **Track:** Alexa+ · **Mini challenge:** AWS Builder
 **Repo:** https://github.com/Yashika2211/amazon (MIT)
+**Live demo:** https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/simulator/
 
 > KinLoop is not a medical device and does not replace emergency services. The demo household is fictional.
 
@@ -78,7 +79,7 @@ flowchart LR
 
 | Service | How KinLoop uses it |
 |---|---|
-| **Amazon Bedrock** | The digest Lambda calls the **Converse API** with Claude Haiku 4.5 (US inference profile), falling back to Amazon Nova Lite and then to a deterministic template. The system prompt forbids medical advice and allows only restating logged facts. Model ID, latency and token usage are logged and stored with each digest. The simulated Alexa+ client also uses Converse **tool use** as its orchestrator. |
+| **Amazon Bedrock** | The digest Lambda calls the **Converse API** with Claude Haiku 4.5 (`au.` inference profile), falling back to Amazon Nova Lite (`apac.`) and then to a deterministic template. Every model output passes a deterministic check (no false "missed" claims, no unknown medicines, no advice, no dropped red flag) before it's stored. In production this caught Nova Lite calling a due dose "missed". The system prompt forbids medical advice and allows only restating logged facts. Model ID, latency and token usage are logged and stored with each digest. The simulated Alexa+ client also uses Converse **tool use** as its orchestrator. |
 | **AWS Lambda** | Three functions: the API (MCP + OAuth + REST + static web) behind a **Function URL**; escalation; and the digest, invoked asynchronously (`InvocationType: Event`) so voice responses never wait on an LLM. |
 | **Amazon DynamoDB** | One on-demand table with single-table design (households, members, medications, dose logs, check-ins, symptoms, messages, alerts, digests and OAuth artifacts). Conditional writes make dose logging and alert dedupe idempotent. TTL enforces the retention stated on the privacy page (90 days for health records). PITR and SSE are on. |
 | **Amazon EventBridge Scheduler** | `rate(10 minutes)` invokes the escalation Lambda, which runs the deterministic rules for every household. |
@@ -91,12 +92,15 @@ flowchart LR
 - **Elicitation vs. statelessness.** Alexa+'s documented `initialize` doesn't advertise `elicitation`, and a stateless server can't receive the answer to a mid-call server request. We made the destructive tool a two-step call: preview, then `confirm: true`. Alexa+ asks the user in between.
 - **Latency with an LLM in the product.** The family summary needs an LLM, but tools must answer in under 500 ms. We moved Bedrock to an async Lambda and added a freshness check. If anything was logged after the digest was written, `get_parent_status` speaks a deterministic live summary instead, so Arjun never hears stale facts.
 - **Safety copy.** Every red-flag response tells the parent to call emergency services, says the family was alerted, and says plainly that Alexa can't call for them.
+- **Production-only bugs:** behind Lambda, the MCP SDK's transport answered 415 to every call, because serverless-http leaves `rawHeaders` empty. Locally everything passed. We fixed it with a regression test that replays a real Function URL event.
 - **Docs and tooling gaps:** the docs index returned 404, the CLI install command was missing, an unrelated `alexa-ai` package sits on npm, the flags for one command differ between pages, and the MCP Apps helpers don't type-check with the stable v1 SDK. All are logged with workarounds in the friction log.
 
 ## Accomplishments that we're proud of
 
 - A safety design we can defend: no model decides who gets alerted.
-- 100% coverage on the rules, 40 MCP and OAuth integration tests (including a cross-household isolation test), and a Playwright smoke test that runs the OAuth and PKCE sign-in in a real browser.
+- Deployed and measured: 17–68 ms p95 server time per tool on Lambda + DynamoDB, well inside Alexa+'s 500 ms budget.
+- A deterministic guard on LLM output that caught a real false claim in production.
+- 100% coverage on the rules, 46 MCP, OAuth, Lambda-path and digest integration tests (including a cross-household isolation test), and a Playwright smoke test that runs the OAuth and PKCE sign-in in a real browser.
 - Spoken responses that sound like a person: "Got it. Your Amlodipine 5 mg for 8 AM is marked as taken. Next is Metformin 500 mg at 8 PM."
 
 ## What we learned

@@ -22,6 +22,7 @@ Rules:
 - Only restate facts present in the JSON. Never infer, guess or add anything that is not there.
 - Never give medical advice, never diagnose, never interpret symptoms, never suggest treatments or dosage changes.
 - If a red-flag alert exists, state it first and plainly, and say the family was alerted.
+- Only doses listed under "missed" were missed. Doses under "dueNowNotYetTaken" are not missed; you may say they are due. Never call a dose missed unless it is in "missed".
 - Mention missed doses by medicine name and time. Mention mood and sleep if logged.
 - Refer to the parent by first name and use the name instead of pronouns. Write in English.`;
 
@@ -29,7 +30,9 @@ export interface DigestFacts {
   elderName: string;
   date: string;
   localTime: string;
-  doses: { taken: string[]; missed: string[]; pendingOrLate: string[]; upcoming: string[] };
+  doses: { taken: string[]; missed: string[]; dueNowNotYetTaken: string[]; upcoming: string[] };
+  /** Every medicine name on the schedule, for the post-generation check. */
+  medicineNames: string[];
   checkIn: { mood: number; sleep?: string; note?: string; at: string } | null;
   moodTrendLastWeek: string;
   symptomsToday: Array<{ text: string; redFlags: string[] }>;
@@ -61,9 +64,10 @@ export async function collectFacts(store: Store, householdId: string, now: Date)
     doses: {
       taken: day.taken.map(label),
       missed: day.missed.map(label),
-      pendingOrLate: day.pending.map(label),
+      dueNowNotYetTaken: day.pending.map(label),
       upcoming: day.upcoming.map(label),
     },
+    medicineNames: meds.filter((m) => m.active).map((m) => m.name),
     checkIn: today
       ? { mood: today.mood, ...(today.sleep ? { sleep: today.sleep } : {}), ...(today.note ? { note: today.note } : {}), at: today.at }
       : null,
@@ -81,7 +85,7 @@ export function templateDigest(f: DigestFacts, opts: { includeAlerts?: boolean }
   const parts: string[] = [];
   const urgent = opts.includeAlerts === false ? undefined : f.alertsToday.find((a) => a.kind === "red_flag");
   if (urgent) parts.push(`${urgent.reason.replace(/ Please call now\.$/, "").replace(/\.$/, "")}, and the family was alerted.`);
-  const total = f.doses.taken.length + f.doses.missed.length + f.doses.pendingOrLate.length;
+  const total = f.doses.taken.length + f.doses.missed.length + f.doses.dueNowNotYetTaken.length;
   if (total > 0) {
     parts.push(
       `${f.elderName} has taken ${f.doses.taken.length} of ${plural(total, "dose")} due so far today` +
@@ -108,6 +112,28 @@ export interface DigestResult {
   outputTokens: number;
 }
 
+/** Brand and generic names a model might mention, to catch medicines that aren't on the schedule. */
+const COMMON_MEDICINES = [
+  "aspirin", "paracetamol", "acetaminophen", "ibuprofen", "insulin", "metformin", "amlodipine", "atorvastatin",
+  "lisinopril", "losartan", "levothyroxine", "omeprazole", "warfarin", "clopidogrel", "glimepiride", "telmisartan",
+];
+
+/**
+ * Deterministic check on model output before anyone hears it. Returns the reason it was rejected,
+ * or null if it only states things the facts support.
+ */
+export function checkDigest(text: string, f: DigestFacts): string | null {
+  const t = text.toLowerCase();
+  if (!t.trim()) return "empty";
+  if (/\bmiss(ed|ing)\b/.test(t) && f.doses.missed.length === 0) return "claims a missed dose but none were missed";
+  const known = new Set(f.medicineNames.map((n) => n.toLowerCase()));
+  const unknown = COMMON_MEDICINES.find((m) => t.includes(m) && !known.has(m));
+  if (unknown) return `mentions a medicine not on the schedule (${unknown})`;
+  if (/\b(you should|i recommend|consult|diagnos|treatment|increase the dose|reduce the dose)/.test(t)) return "gives advice";
+  if (f.alertsToday.some((a) => a.kind === "red_flag") && !/(alert|fain|chest|breath|fall|fell|confus|stroke)/.test(t)) return "omits today's red-flag alert";
+  return null;
+}
+
 export async function writeDigestWithBedrock(
   facts: DigestFacts,
   client: BedrockRuntimeClient,
@@ -124,8 +150,12 @@ export async function writeDigestWithBedrock(
           inferenceConfig: { maxTokens: 200, temperature: 0.2 },
         }),
       );
-      const text = r.output?.message?.content?.map((c) => c.text ?? "").join("").trim();
-      if (!text) throw new Error("empty response");
+      const text = r.output?.message?.content?.map((c) => c.text ?? "").join("").trim() ?? "";
+      const rejected = checkDigest(text, facts);
+      if (rejected) {
+        log.warn("digest.rejected", { modelId, reason: rejected });
+        continue;
+      }
       const result = {
         text,
         modelId,

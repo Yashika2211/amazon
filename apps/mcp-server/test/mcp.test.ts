@@ -73,6 +73,29 @@ describe("MCP protocol", () => {
     expect(read.body.result.contents[0].text).toContain("ui/initialize");
   });
 
+  it("never leaks stack traces on unexpected errors", async () => {
+    const { default: request } = await import("supertest");
+    h.deps.store.getCredential = async () => {
+      throw new Error("boom at /var/task/secret.js");
+    };
+    const { pkceChallenge, randomToken } = await import("../src/oauth/crypto.js");
+    const res = await request(h.app)
+      .post("/oauth/authorize")
+      .type("form")
+      .send({
+        response_type: "code",
+        client_id: "kinloop-dev-tools",
+        redirect_uri: "http://localhost:6274/oauth/callback",
+        code_challenge: pkceChallenge(randomToken()),
+        code_challenge_method: "S256",
+        username: "kamala",
+        pin: "1111",
+      });
+    expect(res.status).toBe(500);
+    expect(res.headers["content-type"]).toMatch(/json/);
+    expect(res.text).not.toMatch(/boom|var\/task|at /);
+  });
+
   it("rejects GET and DELETE on the stateless endpoint", async () => {
     const { default: request } = await import("supertest");
     expect((await request(h.app).get("/mcp")).status).toBe(405);

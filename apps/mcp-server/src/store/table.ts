@@ -114,8 +114,10 @@ export class DynamoTable implements Table {
       const r = await this.doc.send(
         new QueryCommand({
           TableName: this.tableName,
-          KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)",
-          ExpressionAttributeValues: { ":pk": pk, ":sk": skPrefix },
+          // DynamoDB rejects begins_with on an empty string, so an empty prefix means "whole partition".
+          ...(skPrefix
+            ? { KeyConditionExpression: "pk = :pk AND begins_with(sk, :sk)", ExpressionAttributeValues: { ":pk": pk, ":sk": skPrefix } }
+            : { KeyConditionExpression: "pk = :pk", ExpressionAttributeValues: { ":pk": pk } }),
           ExclusiveStartKey,
         }),
       );

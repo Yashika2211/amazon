@@ -5,6 +5,22 @@ import { DEMO, seedDemo, wipeDemo } from "../src/store/seed.js";
 
 const now = new Date("2026-10-21T02:50:00Z"); // 08:20 IST
 
+describe("DynamoTable", () => {
+  it("queries a whole partition without begins_with when the prefix is empty", async () => {
+    const { DynamoTable } = await import("../src/store/table.js");
+    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
+    const sent: any[] = [];
+    const fake = { send: async (cmd: any) => (sent.push(cmd.input), { Items: [] }) };
+    const t = new DynamoTable("t", new DynamoDBClient({ region: "ap-southeast-2" }));
+    (t as any).doc = fake;
+    await t.query("HH#x", "");
+    await t.query("HH#x", "MED#");
+    expect(sent[0].KeyConditionExpression).toBe("pk = :pk");
+    expect(sent[0].ExpressionAttributeValues).toEqual({ ":pk": "HH#x" });
+    expect(sent[1].KeyConditionExpression).toBe("pk = :pk AND begins_with(sk, :sk)");
+  });
+});
+
 describe("Store", () => {
   it("seeds a demo household with a week of history", async () => {
     const table = new MemoryTable();

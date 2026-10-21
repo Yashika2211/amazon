@@ -10,6 +10,8 @@
 #   ALEXA_CLIENT_ID      OAuth client id for Alexa (default alexa-kinloop)
 #   DEMO_LOCAL_TIME      pin the demo clock, e.g. 08:20
 #   BEDROCK_MODEL_ID     default us.anthropic.claude-haiku-4-5-20251001-v1:0
+#                        (ap-southeast-2: au.anthropic.claude-haiku-4-5-20251001-v1:0)
+#   BEDROCK_FALLBACK_MODEL_ID  default us.amazon.nova-lite-v1:0 (ap-southeast-2: apac.amazon.nova-lite-v1:0)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -42,6 +44,7 @@ OVERRIDES=("AlexaClientSecretParam=$SECRET_PARAM")
 [[ -n "${DEMO_CAREGIVER_PHONE:-}" ]] && OVERRIDES+=("DemoCaregiverPhone=$DEMO_CAREGIVER_PHONE" "SmsEnabled=true")
 [[ -n "${DEMO_LOCAL_TIME:-}" ]] && OVERRIDES+=("DemoLocalTime=$DEMO_LOCAL_TIME")
 [[ -n "${BEDROCK_MODEL_ID:-}" ]] && OVERRIDES+=("BedrockModelId=$BEDROCK_MODEL_ID")
+[[ -n "${BEDROCK_FALLBACK_MODEL_ID:-}" ]] && OVERRIDES+=("BedrockFallbackModelId=$BEDROCK_FALLBACK_MODEL_ID")
 [[ -n "${TELEGRAM_BOT_TOKEN_PARAM:-}" ]] && OVERRIDES+=("TelegramBotTokenParam=$TELEGRAM_BOT_TOKEN_PARAM")
 
 echo "▸ Deploying stack $STACK to $REGION"
@@ -58,7 +61,11 @@ sam deploy \
 BASE="$(aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK" --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" --output text)"
 BASE="${BASE%/}"
 echo "▸ Seeding the demo household"
-curl -fsS -X POST "$BASE/api/demo/reset" >/dev/null && echo "  done"
+if ! curl -fsS -X POST "$BASE/api/demo/reset" >/dev/null; then
+  echo "Seeding failed. Check the logs: aws logs tail /aws/lambda/<ApiFunction name> --region $REGION" >&2
+  exit 1
+fi
+echo "  done"
 
 cat <<MSG
 

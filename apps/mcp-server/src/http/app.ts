@@ -32,6 +32,18 @@ function apiError(res: Response, err: unknown): void {
   res.status(500).json({ error: "internal_error", message: "Something went wrong. Please try again." });
 }
 
+/**
+ * The SDK transport converts the Node request to a web Request from `rawHeaders`. serverless-http
+ * (our Lambda adapter) only fills `headers`, so without this the transport sees no Content-Type
+ * on Lambda and answers 415.
+ */
+function ensureRawHeaders(req: Request): void {
+  if (req.rawHeaders && req.rawHeaders.length > 0) return;
+  req.rawHeaders = Object.entries(req.headers).flatMap(([name, value]) =>
+    value === undefined ? [] : Array.isArray(value) ? value.flatMap((v) => [name, v]) : [name, String(value)],
+  );
+}
+
 export function createApp({ deps, secrets, staticDir }: AppOptions): Express {
   const app = express();
   app.disable("x-powered-by");
@@ -55,6 +67,7 @@ export function createApp({ deps, secrets, staticDir }: AppOptions): Express {
   // ---- MCP: Streamable HTTP, stateless, JSON responses ----
   const bearer = requireBearer(deps);
   app.post("/mcp", express.json({ limit: "256kb" }), bearer, async (req: Request, res: Response) => {
+    ensureRawHeaders(req);
     const server = createMcpServer(deps, req.kinloop!);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on("close", () => {
@@ -153,6 +166,12 @@ export function createApp({ deps, secrets, staticDir }: AppOptions): Express {
 
   app.use((_req, res) => {
     res.status(404).json({ error: "not_found", message: "Not found." });
+  });
+  // Last-resort handler: never send stack traces or internals to the client.
+  app.use((err: unknown, _req: Request, res: Response, _next: express.NextFunction) => {
+    log.error("http.unhandled", { error: err instanceof Error ? err.message : String(err) });
+    if (res.headersSent) return;
+    res.status(500).json({ error: "internal_error", message: "Something went wrong. Please try again." });
   });
   return app;
 }

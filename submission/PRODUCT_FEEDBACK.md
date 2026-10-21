@@ -54,12 +54,31 @@ Honest notes on every tool, API and SDK we used. Where we couldn't use something
 - **Would build with it again:** yes, once the SDK versions line up.
 
 ## Amazon Bedrock (Converse API)
-- **Used for:** the family digest (Claude Haiku 4.5, falling back to Nova Lite, then a template), and tool-use orchestration in the simulated Alexa+ client.
-- **What worked:** the Converse API meant the same code drives Claude and Nova, which made the fallback chain trivial. Tool use maps one-to-one onto MCP `tools/list` JSON schemas.
-- **Pending:** live measurements of latency, token counts and IAM experience go here after deployment.
+- **Used for:** the family digest (Claude Haiku 4.5 via the `au.` inference profile, falling back to Nova Lite via `apac.`, then a template), and tool-use orchestration in the simulated Alexa+ client.
+- **What worked:**
+  - The Converse API meant one code path drives both Claude and Nova, so the fallback chain was trivial.
+  - Tool use maps one-to-one onto MCP `tools/list` JSON schemas.
+  - In production, Nova Lite answered in about 505–534 ms with roughly 280–335 input and 30–33 output tokens. That's fine for an async digest and would be far too slow for the voice path, which is why it's off it.
+- **What needs work:**
+  - Before account verification finished, every call returned "your account is currently being verified".
+  - After verification, Claude returned `ResourceNotFoundException: Model use case details have not been submitted`. That's a misleading error type for a form that hasn't been filled in.
+  - Nova Lite twice claimed a dose was "missed" when it was only due, even with an explicit prompt rule. Our deterministic post-check caught both.
+- **Onboarding:** smooth once access existed. The access gates are the hard part.
+- **Would build with it again:** yes, but always with a deterministic check on the output for anything a family will act on.
 
 ## AWS Lambda, Amazon DynamoDB, EventBridge Scheduler, Amazon SNS, SSM Parameter Store, AWS SAM
-- **Used for:** see the AWS table in DEVPOST.md.
-- **What worked so far:** `sam validate --lint` passed on the first try. The `ScheduleV2` event type turns EventBridge Scheduler into four lines of YAML. DynamoDB conditional writes gave us idempotent dose logging and per-incident alert dedupe with no extra infrastructure.
-- **What needs work:** SNS direct SMS has no resource ARN, so least-privilege IAM is impossible for that one action. India SMS also needs DLT sender registration, so we used email for the demo.
-- **Pending:** deployment experience, cold starts and real p95 latency go here after `pnpm deploy:aws` runs.
+- **Used for:** see the AWS table in DEVPOST.md. Deployed to ap-southeast-2, the project's region.
+- **What worked:**
+  - `sam validate --lint` passed first time, and `sam deploy --resolve-s3` created the stack (3 Lambdas, Function URL, table, topic, schedule, IAM roles) in one go.
+  - The `ScheduleV2` event type turns EventBridge Scheduler into four lines of YAML, and it fired every 10 minutes from the first deploy.
+  - DynamoDB conditional writes gave us idempotent dose logging and per-incident alert dedupe with no extra infrastructure.
+  - Server-side tool time measured from CloudWatch logs was 8–39 ms at p50 and 17–68 ms at p95 across all tools on DynamoDB.
+  - SNS delivered the red-flag email on the first try.
+- **What needs work:**
+  - SNS direct SMS has no resource ARN, so least-privilege IAM is impossible for that action.
+  - India SMS needs DLT sender registration, so we used email.
+  - Lambda + serverless-http + the MCP SDK returned 415 on every call until we filled `rawHeaders` (friction item 10).
+  - On a brand-new standalone account, every service failed with a different error code (`SubscriptionRequiredException`, `OptInRequired`, `NotSignedUp`) until activation finished.
+  - The new-experience project's single-region constraint wasn't visible from the CLI.
+- **Onboarding:** the Agent Toolkit for AWS setup (`aws configure agent-toolkit`) was quick, and its starter rules were what told us about the region lock.
+- **Would build with it again:** yes. The whole backend costs cents a day at demo scale.
