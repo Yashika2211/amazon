@@ -36,6 +36,10 @@ export interface Medication {
   times: string[];
   active: boolean;
   createdAt: string;
+  /** Tablets on hand; counts down as doses are logged. Undefined = not tracked. */
+  pillsLeft?: number;
+  /** When the supply was last refilled; scopes the refill alert to one per supply. */
+  refilledAt?: string;
 }
 
 export interface DoseLog {
@@ -96,7 +100,8 @@ export type AlertKind =
   | "missed_dose"
   | "no_checkin"
   | "low_mood"
-  | "callback_request";
+  | "callback_request"
+  | "refill_due";
 
 export type AlertSeverity = "urgent" | "warning" | "info";
 

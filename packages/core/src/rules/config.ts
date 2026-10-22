@@ -14,4 +14,6 @@ export const RULES = {
   RED_FLAG_DEDUPE_MIN: 30,
   /** Repeated callback requests inside this window are one incident. */
   CALLBACK_DEDUPE_MIN: 15,
+  /** Warn the family when a tracked medicine has this many days or fewer left. */
+  REFILL_WARN_DAYS: 5,
 } as const;

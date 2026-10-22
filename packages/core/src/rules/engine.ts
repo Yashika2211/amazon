@@ -2,6 +2,7 @@ import type { Alert, CheckIn, DoseLog, Household, Medication } from "../types.js
 import { localParts } from "../time.js";
 import { evaluateDoses, type ReminderAction } from "./doses.js";
 import { evaluateCheckIn, evaluateLowMood } from "./wellbeing.js";
+import { evaluateRefills } from "./refill.js";
 
 export interface EscalationInput {
   household: Household;
@@ -39,6 +40,7 @@ export function runEscalation(input: EscalationInput): EscalationResult {
     ...doses.alerts,
     evaluateCheckIn(todays, date, minutes, household.checkInDeadline, elderName, lastCheckIn),
     evaluateLowMood(input.checkIns, date, elderName),
+    ...evaluateRefills(input.medications, elderName),
   ].filter((a): a is NonNullable<typeof a> => a !== null);
 
   return {
