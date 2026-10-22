@@ -36,6 +36,9 @@ describe("medicationMatches", () => {
     expect(medicationMatches(amlo, "my blood pressure pill")).toBe(true);
     expect(medicationMatches(amlo, "BP tablet")).toBe(true);
     expect(medicationMatches(metf, "sugar medicine")).toBe(true);
+    expect(medicationMatches(amlo, "maine BP ki goli le li")).toBe(true);
+    expect(medicationMatches(metf, "sugar ki dawai kha li")).toBe(true);
+    expect(medicationMatches(amlo, "goli le li")).toBe(false);
     expect(medicationMatches(ator, "sugar medicine")).toBe(false);
     expect(medicationMatches(amlo, "my pill")).toBe(false);
     // Short words must not substring-match names ("in" is inside "Metformin").

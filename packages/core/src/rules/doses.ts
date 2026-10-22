@@ -56,6 +56,8 @@ const GENERIC_WORDS = new Set([
   "my", "the", "a", "an", "pill", "pills", "tablet", "tablets", "medicine", "medicines",
   "medication", "dose", "capsule", "i", "took", "just", "have", "taken", "for", "of",
   "morning", "evening", "night", "afternoon", "mg",
+  // Hinglish fillers: "BP ki goli le li", "sugar ki dawai kha li"
+  "goli", "dawai", "dawa", "dava", "ki", "ka", "ke", "li", "le", "liya", "kha", "khayi", "maine", "meri", "mera", "abhi",
 ]);
 
 const SYNONYMS: Record<string, string> = {
