@@ -222,9 +222,11 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
     {
       title: "Change medicine schedule",
       description:
-        "Adds, changes or removes a medicine on the parent's schedule. Family members only. Two steps: first call without `confirm` and read the summary back to the user. Only after the user clearly says yes, call again with the same arguments and confirm=true. Example: \"Add Metformin 500mg at 8 PM for Mom\" → action=add, medication=Metformin, dose=500 mg, times=[\"20:00\"].",
+        "Adds, changes, removes or refills a medicine on the parent's schedule. Family members only. Refill example: \"I picked up 60 Metformin tablets for Mom\" → action=refill, medication=Metformin, pills=60. Two steps: first call without `confirm` and read the summary back to the user. Only after the user clearly says yes, call again with the same arguments and confirm=true. Example: \"Add Metformin 500mg at 8 PM for Mom\" → action=add, medication=Metformin, dose=500 mg, times=[\"20:00\"].",
       inputSchema: {
-        action: z.enum(["add", "change", "remove"]).describe("add a new medicine, change an existing one's dose or times, or remove it."),
+        action: z
+          .enum(["add", "change", "remove", "refill"])
+          .describe("add a new medicine, change an existing one's dose or times, remove it, or refill its supply."),
         medication: z.string().min(2).max(80).describe("Medicine name, e.g. \"Metformin\"."),
         dose: z.string().max(40).optional().describe("Dose with unit, e.g. \"500 mg\". Required for add."),
         times: z
@@ -234,6 +236,7 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
           .optional()
           .describe("Local times in 24-hour HH:MM, e.g. [\"08:00\", \"20:00\"]. Required for add."),
         purpose: z.string().max(60).optional().describe("Plain-language purpose, e.g. \"diabetes\". Optional."),
+        pills: z.number().int().min(1).max(1000).optional().describe("Tablets in the new supply. Required for refill; optional for add, to track the supply."),
         confirm: z.boolean().optional().describe("Set true only after the user confirmed the summary from the first call."),
       },
       annotations: { ...DESTRUCTIVE, title: "Change medicine schedule" },

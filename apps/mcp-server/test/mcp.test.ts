@@ -175,7 +175,7 @@ describe("elder tools", () => {
   it("report_symptom: non-red-flag symptoms are logged without alerting", async () => {
     const r = await callTool(h.app, elder, "report_symptom", { description: "I'm feeling a bit dizzy" });
     expect(r.structuredContent.redFlag).toBe(false);
-    expect(h.notifier.sent).toHaveLength(0);
+    expect(h.notifier.sent.filter((n) => n.alert.kind === "red_flag")).toHaveLength(0);
     expect(await h.deps.store.listSymptoms(DEMO.householdId, "2026-10-21")).toHaveLength(1);
   });
 
@@ -261,6 +261,30 @@ describe("family tools", () => {
     expect(spoken(again)).toBe("There are no open alerts for Kamala right now.");
     const notMine = await callTool(h.app, elder, "acknowledge_alert", {});
     expect(notMine.isError).toBe(true);
+  });
+
+  it("refill countdown: logging uses a tablet, Kamala and Arjun hear it, one alert, and a refill resets it", async () => {
+    const plan = await callTool(h.app, elder, "get_today_plan");
+    expect(spoken(plan)).toContain("You have about 4 days of Metformin left. I've let Arjun know.");
+
+    await callTool(h.app, elder, "log_medication", { medication: "metformin" });
+    const metformin = () => h.deps.store.listMedications(DEMO.householdId).then((ms) => ms.find((m) => m.name === "Metformin")!);
+    expect((await metformin()).pillsLeft).toBe(8);
+    await callTool(h.app, elder, "log_medication", { medication: "metformin" }); // idempotent retry
+    expect((await metformin()).pillsLeft).toBe(8);
+    expect(h.notifier.sent.filter((n) => n.alert.kind === "refill_due")).toHaveLength(1);
+
+    const status = await callTool(h.app, son, "get_parent_status");
+    expect(spoken(status)).toContain("Metformin runs out in about 4 days.");
+
+    const preview = await callTool(h.app, son, "update_medication_schedule", { action: "refill", medication: "metformin", pills: 60 });
+    expect(spoken(preview)).toBe("Just to confirm: refill Metformin with 60 tablets, about 30 days of supply. Should I go ahead?");
+    await callTool(h.app, son, "update_medication_schedule", { action: "refill", medication: "metformin", pills: 60, confirm: true });
+    expect((await metformin()).pillsLeft).toBe(68);
+    expect(spoken(await callTool(h.app, elder, "get_today_plan"))).not.toContain("Metformin left");
+
+    const noCount = await callTool(h.app, son, "update_medication_schedule", { action: "refill", medication: "metformin" });
+    expect(spoken(noCount)).toBe("How many tablets of Metformin are in the new supply?");
   });
 
   it("caregiver-only tools refuse the elder", async () => {

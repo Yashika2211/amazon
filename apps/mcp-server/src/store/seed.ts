@@ -70,8 +70,8 @@ export async function seedDemo(store: Store, opts: SeedOptions): Promise<void> {
     ...(opts.caregiverTelegramChatId ? { telegramChatId: opts.caregiverTelegramChatId } : {}),
   };
   const meds: Medication[] = [
-    { id: "med-amlodipine", householdId: household.id, name: "Amlodipine", dose: "5 mg", purpose: "blood pressure", times: ["08:00"], active: true, createdAt },
-    { id: "med-metformin", householdId: household.id, name: "Metformin", dose: "500 mg", purpose: "diabetes", times: ["08:00", "20:00"], active: true, createdAt },
+    { id: "med-amlodipine", householdId: household.id, name: "Amlodipine", dose: "5 mg", purpose: "blood pressure", times: ["08:00"], active: true, createdAt, pillsLeft: 24, refilledAt: createdAt },
+    { id: "med-metformin", householdId: household.id, name: "Metformin", dose: "500 mg", purpose: "diabetes", times: ["08:00", "20:00"], active: true, createdAt, pillsLeft: 9, refilledAt: createdAt },
     { id: "med-atorvastatin", householdId: household.id, name: "Atorvastatin", dose: "10 mg", purpose: "cholesterol", times: ["21:00"], active: true, createdAt },
   ];
 

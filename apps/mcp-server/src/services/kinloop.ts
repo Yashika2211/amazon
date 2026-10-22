@@ -13,6 +13,7 @@ import {
   moodTrend,
   plural,
   redFlagAlert,
+  refillStatus,
   RED_FLAG_LABELS,
   speakable,
   spokenList,
@@ -111,6 +112,23 @@ function greeting(minutes: number): string {
   return "Good evening";
 }
 
+/** Counts one tablet off a tracked supply when a dose is newly logged. */
+async function takeOnePill(deps: Deps, med: Medication): Promise<void> {
+  if (med.pillsLeft === undefined) return;
+  await deps.store.putMedication({ ...med, pillsLeft: Math.max(0, med.pillsLeft - 1) });
+}
+
+function refillLines(meds: Medication[], isElder: boolean, caregiverName?: string): string[] {
+  return meds
+    .map(refillStatus)
+    .filter((r): r is NonNullable<typeof r> => Boolean(r?.needsRefill))
+    .map((r) => {
+      const left = r.daysLeft === 0 ? `You've run out of ${r.name}` : `You have about ${plural(r.daysLeft, "day")} of ${r.name} left`;
+      if (isElder) return `${left}.${caregiverName ? ` I've let ${caregiverName} know.` : ""}`;
+      return r.daysLeft === 0 ? `${r.name} has run out.` : `${r.name} runs out in about ${plural(r.daysLeft, "day")}.`;
+    });
+}
+
 async function afterWrite(deps: Deps, l: Loaded): Promise<void> {
   await deps.store.touchActivity(l.household.id, l.now.toISOString());
   await escalateHousehold(deps, l.household.id);
@@ -158,6 +176,7 @@ export async function getTodayPlan(deps: Deps, ctx: AuthContext): Promise<Outcom
       if (day.taken.length) parts.push(`${isElder ? "You've" : `${l.elder.name} has`} already taken ${plural(day.taken.length, "dose")}.`);
     }
   }
+  parts.push(...refillLines(meds, isElder, l.caregivers[0]?.name));
   const upcomingAppts = appts.filter((a) => a.time >= l.hhmm);
   if (upcomingAppts.length) {
     parts.push(`${isElder ? "You have" : `${l.elder.name} has`} ${spokenList(upcomingAppts.map((a) => `${a.title} at ${spokenTime(a.time)}`))}.`);
@@ -181,6 +200,7 @@ export async function getTodayPlan(deps: Deps, ctx: AuthContext): Promise<Outcom
       appointments: appts.map((a) => ({ title: a.title, time: a.time })),
       unheardMessages: unheard.length,
       reminders: reminders.map((r) => r.text),
+      refills: meds.map(refillStatus).filter(Boolean),
     },
   };
 }
@@ -213,7 +233,9 @@ export async function logMedication(deps: Deps, ctx: AuthContext, input: LogMedi
     if (due.length === 0) {
       return { speech: "You're all caught up. There are no doses due right now.", data: { logged: [], alreadyLogged: true } };
     }
-    for (const s of due) await record(s.medicationId, s.slot);
+    for (const s of due) {
+      if (await record(s.medicationId, s.slot)) await takeOnePill(deps, meds.find((m) => m.id === s.medicationId)!);
+    }
     await afterWrite(deps, l);
     return {
       speech: `Got it. I've marked ${spokenList(due.map(doseLabel))} as taken.`,
@@ -249,7 +271,10 @@ export async function logMedication(deps: Deps, ctx: AuthContext, input: LogMedi
       };
     case "match": {
       const created = await record(m.medication.id, m.slot);
-      if (created) await afterWrite(deps, l);
+      if (created) {
+        await takeOnePill(deps, m.medication);
+        await afterWrite(deps, l);
+      }
       const next = doseSlotsForDay(meds, [...logs, { householdId: "", date: l.date, medicationId: m.medication.id, slot: m.slot, takenAt: "", loggedBy: "" }], l.minutes).find(
         (s) => s.status === "upcoming",
       );
@@ -445,6 +470,7 @@ export async function getParentStatus(deps: Deps, ctx: AuthContext): Promise<Out
   const otherOpen = open.filter((a) => a.severity !== "urgent");
   if (otherOpen.length) parts.push(`There ${otherOpen.length === 1 ? "is" : "are"} also ${plural(otherOpen.length, "open alert")}: ${otherOpen.map((a) => a.reason).join(" ")}`);
   if (trend === "declining") parts.push(`${l.elder.name}'s mood has been lower than usual this week.`);
+  parts.push(...refillLines(meds, false));
 
   const week = adherence(meds, logs, l.date, l.minutes, 7);
   return {
@@ -465,6 +491,7 @@ export async function getParentStatus(deps: Deps, ctx: AuthContext): Promise<Out
       alertsToday: todaysAlerts.map((a) => ({ kind: a.kind, severity: a.severity, reason: a.reason, at: a.createdAt, acknowledged: Boolean(a.acknowledgedAt) })),
       digest: { text: summary, source: digestSource, generatedAt: fresh ? digest.generatedAt : l.now.toISOString() },
       adherence7d: week,
+      refills: meds.map(refillStatus).filter(Boolean),
     },
   };
 }
@@ -526,7 +553,9 @@ export async function acknowledgeAlert(
 }
 
 export interface ScheduleInput {
-  action: "add" | "change" | "remove";
+  action: "add" | "change" | "remove" | "refill";
+  /** Tablets in the new supply (refill), or on hand (add). */
+  pills?: number | undefined;
   medication: string;
   dose?: string | undefined;
   times?: string[] | undefined;
@@ -553,6 +582,7 @@ export async function updateMedicationSchedule(deps: Deps, ctx: AuthContext, inp
       throw new SpokenError(`${existing[0]!.name} is already on ${l.elder.name}'s schedule. You can ask me to change its time or dose instead.`, "conflict");
     }
     const med: Medication = {
+      ...(input.pills ? { pillsLeft: input.pills, refilledAt: l.now.toISOString() } : {}),
       id: `med-${randomUUID().slice(0, 8)}`,
       householdId: l.household.id,
       name: input.medication.trim().replace(/^\w/, (c) => c.toUpperCase()),
@@ -569,7 +599,16 @@ export async function updateMedicationSchedule(deps: Deps, ctx: AuthContext, inp
       throw new SpokenError(`I couldn't find ${input.medication} on ${l.elder.name}'s schedule.`, "not_found");
     }
     const med = existing[0]!;
-    if (input.action === "remove") {
+    if (input.action === "refill") {
+      if (!input.pills) throw new SpokenError(`How many tablets of ${med.name} are in the new supply?`, "missing_arguments");
+      const pills = input.pills;
+      preview = `refill ${med.name} with ${pills} tablets, about ${plural(Math.floor(pills / Math.max(1, med.times.length)), "day")} of supply`;
+      apply = async () => {
+        const updated = { ...med, pillsLeft: (med.pillsLeft ?? 0) + pills, refilledAt: l.now.toISOString() };
+        await deps.store.putMedication(updated);
+        return updated;
+      };
+    } else if (input.action === "remove") {
       preview = `remove ${med.name} ${med.dose} from ${l.elder.name}'s schedule`;
       apply = async () => {
         const updated = { ...med, active: false };
@@ -596,12 +635,12 @@ export async function updateMedicationSchedule(deps: Deps, ctx: AuthContext, inp
   await deps.store.touchActivity(l.household.id, l.now.toISOString());
   deps.digest.request(l.household.id);
   return {
-    speech: `Done. I've ${preview.replace(/^add/, "added").replace(/^remove/, "removed").replace(/^change/, "changed")}. ${l.elder.name} will hear about it in the next daily plan.`,
+    speech: `Done. I've ${preview.replace(/^add/, "added").replace(/^remove/, "removed").replace(/^change/, "changed").replace(/^refill/, "refilled")}. ${l.elder.name} will hear about it in the next daily plan.`,
     data: {
       needsConfirmation: false,
       applied: true,
       action: input.action,
-      medication: result ? { name: result.name, dose: result.dose, times: result.times, active: result.active } : null,
+      medication: result ? { name: result.name, dose: result.dose, times: result.times, active: result.active, pillsLeft: result.pillsLeft ?? null } : null,
     },
   };
 }
