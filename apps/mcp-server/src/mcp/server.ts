@@ -104,7 +104,7 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
           .string()
           .max(80)
           .optional()
-          .describe("What the parent called the medicine, e.g. \"Metformin\" or \"my blood pressure pill\". Omit if they did not say."),
+          .describe("The parent's own words for the medicine, copied as said, e.g. \"Metformin\", \"my blood pressure pill\" or \"sugar tablet\". Always pass this when the parent named or described the medicine; omit only if they just said \"my pill\"."),
         allDue: z
           .boolean()
           .optional()
