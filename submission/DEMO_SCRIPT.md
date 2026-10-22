@@ -33,15 +33,15 @@ Lead with the strongest moment: the red flag landing on Arjun's phone falls insi
    **Say:** "And she can say it in Hindi. The same rules catch it, in either script."
 
 ### 1:30–2:10 · Arjun asks his own Alexa (right pane, then the dashboard)
-0. **Arjun says:** "I'm calling her now."
-   Alexa: "I've marked the alert as handled, and I'll let Kamala know."
-   **Kitchen:** "What do I need to do today?" and Alexa now opens with "Arjun has seen your alert." The Echo Show card shows her medicines with status chips.
+4. **Arjun says:** "Alexa, how's Mom doing today?"
+   Alexa: "Urgent: Kamala reported chest pain… Kamala has taken 1 of 2 doses due so far today… Metformin runs out in about 4 days."
+5. **Arjun says:** "I'm calling her now."
+   Alexa: "I've marked 2 alerts as handled, and I'll let Kamala know you've seen it."
+   **Kitchen:** "What do I need to do today?" Alexa now opens with "Arjun has seen your alert," and the Echo Show card shows her medicines with status chips.
    **Say:** "The loop closes on both sides. Kamala knows help is coming."
-4. **Say:** "Alexa, how's Mom doing today?"
-   Alexa: "Urgent: Kamala reported fainting… Kamala has taken 1 of 2 doses due so far today. Kamala hasn't checked in yet today."
-5. **Switch to the dashboard tab:** the urgent banner, timeline, medicine chips, 7-day adherence and mood charts.
+6. **Switch to the dashboard tab:** the urgent banner, timeline, medicine chips, 7-day adherence and mood charts.
    **Say:** "Every afternoon Arjun also gets a warm two-line summary, written by Amazon Bedrock from the logged facts only, precomputed so Alexa answers in under half a second."
-6. **Back to the simulator trace:** point at the latency column (every call well under 500 ms) and the Bedrock digest card (model ID, latency, tokens).
+7. **Back to the simulator trace:** point at the latency column (every call well under 500 ms) and the Bedrock digest card (model ID, latency, tokens).
 
 ### 2:10–2:45 · How it's built
 **Screen:** the architecture diagram.
