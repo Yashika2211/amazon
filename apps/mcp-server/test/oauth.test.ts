@@ -95,7 +95,7 @@ describe("authorization code + PKCE flow", () => {
 
     const list = await rpc(h.app, res.body.access_token, "tools/list");
     expect(list.status).toBe(200);
-    expect(list.body.result.tools.length).toBe(9);
+    expect(list.body.result.tools.length).toBe(10);
   });
 
   it("stores only hashes of codes and tokens", async () => {

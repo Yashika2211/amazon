@@ -489,6 +489,42 @@ export async function sendMessageToParent(deps: Deps, ctx: AuthContext, input: {
   };
 }
 
+/**
+ * Family member says "I'm calling her now": open alerts are marked handled, and the parent hears
+ * at their next interaction that the family saw it. Safe to repeat: nothing open means no-op.
+ */
+export async function acknowledgeAlert(
+  deps: Deps,
+  ctx: AuthContext,
+  input: { note?: string | undefined; incidentKey?: string | undefined },
+): Promise<Outcome> {
+  const l = await load(deps, ctx);
+  requireRole(l, "caregiver");
+  const since = new Date(l.now.getTime() - 24 * 3600_000).toISOString();
+  const open = (await deps.store.listAlerts(l.household.id, since)).filter(
+    (a) => !a.acknowledgedAt && (!input.incidentKey || a.incidentKey === input.incidentKey),
+  );
+  if (open.length === 0) {
+    return { speech: `There are no open alerts for ${l.elder.name} right now.`, data: { acknowledged: 0 } };
+  }
+  for (const a of open) await deps.store.acknowledgeAlert(l.household.id, a.incidentKey, l.now.toISOString());
+  const note = input.note?.trim();
+  await deps.store.putMessage({
+    id: `ack:${l.now.toISOString()}:${l.me.id}`,
+    householdId: l.household.id,
+    kind: "reminder",
+    fromMemberId: l.me.id,
+    fromName: l.me.name,
+    text: `${l.me.name} has seen your alert${note ? ` and says: ${note}` : " and is on it"}.`,
+    createdAt: l.now.toISOString(),
+  });
+  await deps.store.touchActivity(l.household.id, l.now.toISOString());
+  return {
+    speech: `Okay. I've marked ${plural(open.length, "alert")} as handled, and I'll let ${l.elder.name} know you've seen it.`,
+    data: { acknowledged: open.length, kinds: open.map((a) => a.kind), elderNotified: true },
+  };
+}
+
 export interface ScheduleInput {
   action: "add" | "change" | "remove";
   medication: string;

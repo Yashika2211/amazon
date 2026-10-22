@@ -17,6 +17,7 @@ const VALIDATION_HINTS: Record<string, string> = {
   request_callback: "Who would you like a call from?",
   play_family_messages: "Whose messages would you like to hear?",
   send_message_to_parent: "What would you like me to tell them? Keep it to a sentence or two.",
+  acknowledge_alert: "Would you like me to mark the alert as handled and let them know you've seen it?",
   update_medication_schedule:
     "Tell me the medicine, and whether to add, change or remove it. For a new medicine I also need the dose and the time, like 500 milligrams at 8 PM.",
 };
@@ -55,7 +56,7 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
     instructions:
       "KinLoop helps an elderly parent manage their day by voice, and keeps their family informed. " +
       "Elder tools: get_today_plan, log_medication, daily_check_in, report_symptom, request_callback, play_family_messages. " +
-      "Family tools: get_parent_status, send_message_to_parent, update_medication_schedule. " +
+      "Family tools: get_parent_status, send_message_to_parent, acknowledge_alert, update_medication_schedule. " +
       "Speak tool text as written. KinLoop is not a medical device and does not replace emergency services.",
   });
 
@@ -200,6 +201,20 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
       annotations: { ...WRITE, title: "Message my parent" },
     },
     run("send_message_to_parent", (a: { text: string }) => k.sendMessageToParent(deps, ctx, a)),
+  );
+
+  server.registerTool(
+    "acknowledge_alert",
+    {
+      title: "I'm on it",
+      description:
+        "For a family member responding to a KinLoop alert, e.g. \"I'm calling Mom now\", \"I'm on my way\" or \"I've got it\". Marks the parent's open alerts as handled so other family members know, and the parent hears that the family has seen it. Safe to repeat.",
+      inputSchema: {
+        note: z.string().max(160).optional().describe("Optional short reassurance to pass to the parent, e.g. \"I'm calling you right now\"."),
+      },
+      annotations: { ...WRITE_IDEMPOTENT, title: "I'm on it" },
+    },
+    run("acknowledge_alert", (a: { note?: string }) => k.acknowledgeAlert(deps, ctx, a)),
   );
 
   server.registerTool(

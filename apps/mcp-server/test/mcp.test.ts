@@ -42,6 +42,7 @@ describe("MCP protocol", () => {
     const res = await rpc(h.app, elder, "tools/list");
     const tools = res.body.result.tools as Array<{ name: string; description: string; inputSchema: any; annotations: any }>;
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "acknowledge_alert",
       "daily_check_in",
       "get_parent_status",
       "get_today_plan",
@@ -245,6 +246,21 @@ describe("family tools", () => {
     const dup = await callTool(h.app, son, "update_medication_schedule", { action: "add", medication: "Metformin", dose: "500 mg", times: ["20:00"] });
     expect(dup.isError).toBe(true);
     expect(spoken(dup)).toContain("already on Kamala's schedule");
+  });
+
+  it("acknowledge_alert closes the loop: alert handled, and Kamala hears Arjun has seen it", async () => {
+    await callTool(h.app, elder, "report_symptom", { description: "I fell in the bathroom" });
+    const ack = await callTool(h.app, son, "acknowledge_alert", { note: "I'm calling you right now" });
+    expect(spoken(ack)).toBe("Okay. I've marked 1 alert as handled, and I'll let Kamala know you've seen it.");
+    expect((await h.deps.store.listAlerts(DEMO.householdId)).find((a) => a.kind === "red_flag")!.acknowledgedAt).toBeDefined();
+
+    const plan = await callTool(h.app, elder, "get_today_plan");
+    expect(spoken(plan)).toContain("Arjun has seen your alert and says: I'm calling you right now.");
+
+    const again = await callTool(h.app, son, "acknowledge_alert", {});
+    expect(spoken(again)).toBe("There are no open alerts for Kamala right now.");
+    const notMine = await callTool(h.app, elder, "acknowledge_alert", {});
+    expect(notMine.isError).toBe(true);
   });
 
   it("caregiver-only tools refuse the elder", async () => {
