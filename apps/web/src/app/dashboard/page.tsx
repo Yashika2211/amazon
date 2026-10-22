@@ -21,6 +21,7 @@ type Dashboard = {
   alerts: Array<{ incidentKey: string; kind: string; severity: string; reason: string; details: Record<string, string | number>; at: string; acknowledged: boolean }>;
   messages: Array<{ id: string; from: string; text: string; at: string; heard: boolean }>;
   medications: Array<{ id: string; name: string; dose: string; purpose: string | null; times: string[] }>;
+  refills: Array<{ medicationId: string; name: string; pillsLeft: number; daysLeft: number; needsRefill: boolean }>;
 };
 
 const STATUS: Record<string, { label: string; cls: string; icon: string }> = {
@@ -157,6 +158,18 @@ export default function DashboardPage() {
               );
             })}
           </ul>
+          {data.refills.length > 0 && (
+            <>
+              <h3 style={{ marginTop: 16 }}>Supply</h3>
+              <div className="row" style={{ gap: 8 }}>
+                {data.refills.map((r) => (
+                  <span key={r.medicationId} className={`chip ${r.daysLeft <= 1 ? "chip-urgent" : r.needsRefill ? "chip-warn" : "chip-muted"}`}>
+                    {r.needsRefill ? "⚠ " : ""}{r.name}: {r.daysLeft} {r.daysLeft === 1 ? "day" : "days"} left ({r.pillsLeft} tablets)
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </section>
         <section className="card">
           <h2>Timeline</h2>
