@@ -7,7 +7,7 @@ import { oauthRouter, requireBearer, type SecretSource } from "../oauth/router.j
 import { log } from "../log.js";
 import type { Deps } from "../services/deps.js";
 import { createHousehold, dashboardData } from "../services/dashboard.js";
-import { sendMessageToParent, SpokenError } from "../services/kinloop.js";
+import { acknowledgeAlert, sendMessageToParent, SpokenError } from "../services/kinloop.js";
 import { rateLimit } from "./rateLimit.js";
 import { demoRouter } from "./demo.js";
 
@@ -150,12 +150,12 @@ export function createApp({ deps, secrets, staticDir }: AppOptions): Express {
     }
   });
   api.post("/alerts/:key/ack", async (req, res) => {
-    if (req.kinloop!.role !== "caregiver") {
-      res.status(403).json({ error: "forbidden", message: "Only family members can acknowledge alerts." });
-      return;
+    try {
+      const r = await acknowledgeAlert(deps, req.kinloop!, { incidentKey: String(req.params.key) });
+      res.status(r.data.acknowledged ? 200 : 404).json({ acknowledged: Boolean(r.data.acknowledged) });
+    } catch (err) {
+      apiError(res, err);
     }
-    const ok = await deps.store.acknowledgeAlert(req.kinloop!.householdId, String(req.params.key), new Date().toISOString());
-    res.status(ok ? 200 : 404).json({ acknowledged: ok });
   });
   app.use("/api", api);
 
