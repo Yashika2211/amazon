@@ -20,7 +20,7 @@ export interface TraceEntry {
   isError: boolean;
   text: string;
   /** Present when the tool points at an MCP Apps card, so the simulator can render the Echo Show screen. */
-  ui?: { resourceUri: string; structuredContent: Record<string, unknown> };
+  ui?: { resourceUri: string; structuredContent: Record<string, unknown>; html?: string };
 }
 
 export interface TurnInput {
@@ -239,6 +239,19 @@ function isAccessError(err: unknown): boolean {
   return ["ResourceNotFoundException", "AccessDeniedException", "ValidationException"].includes(name);
 }
 
+/** Fetches the MCP Apps card for the last tool that has one, via resources/read, as Alexa+ would. */
+async function attachUi(client: Client, trace: TraceEntry[]): Promise<void> {
+  const entry = [...trace].reverse().find((t) => t.ui);
+  if (!entry?.ui) return;
+  try {
+    const r = await client.readResource({ uri: entry.ui.resourceUri });
+    const c = r.contents[0] as { text?: string } | undefined;
+    if (c?.text) entry.ui.html = c.text;
+  } catch (err) {
+    log.warn("sim.ui_read_failed", { error: String(err) });
+  }
+}
+
 export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Promise<TurnResult> {
   const started = performance.now();
   const client = await connect(opts.mcpUrl, opts.token);
@@ -266,6 +279,7 @@ export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Pr
     const pending = pendingFrom(route.tool, route.arguments, r);
     return { reply: resultText(r), trace, orchestrator: "keyword", ...(pending ? { pending } : {}), totalMs: Math.round(performance.now() - started) };
   } finally {
+    await attachUi(client, trace);
     await client.close().catch(() => undefined);
   }
 }
