@@ -19,7 +19,7 @@ const PHRASES: Record<Persona, string[]> = {
     "Any messages from my son?",
     "Ask my son to call me",
   ],
-  caregiver: ["How's Mom doing today?", "Tell Mom I'll visit on Sunday", "Add Metformin 500mg at 8 PM for Mom", "Yes, go ahead"],
+  caregiver: ["How's Mom doing today?", "I'm calling her now", "Tell Mom I'll visit on Sunday", "Add Metformin 500mg at 8 PM for Mom", "Yes, go ahead"],
 };
 
 /** Hindi and Hinglish for Kamala. The red-flag rules understand both scripts. */

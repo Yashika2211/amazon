@@ -173,6 +173,9 @@ export function routeUtterance(persona: Persona, raw: string, pending?: TurnInpu
       if (sched[4]) args.times = [to24h(Number(sched[4]), Number(sched[5] ?? 0), sched[6]?.replace(/\./g, ""))];
       return { tool: "update_medication_schedule", arguments: args };
     }
+    if (/\b(i'?m (calling|on my way|on it|handling)|i('ve| have) got it|calling (her|him|mom|mum|ma) now)\b/i.test(raw)) {
+      return { tool: "acknowledge_alert", arguments: { note: raw.replace(/[.!]+$/, "") } };
+    }
     const tell = /\b(?:tell|let)\s+(?:mom|mum|ma|amma|dad|papa|her|him|kamala)\s+(?:know\s+)?(?:that\s+)?(.+)/i.exec(raw);
     if (tell) return { tool: "send_message_to_parent", arguments: { text: tell[1]!.replace(/[.?!]+$/, "") } };
     return { tool: "get_parent_status", arguments: {} };

@@ -32,6 +32,7 @@ describe("simulator keyword router (fallback when Bedrock is unavailable)", () =
       tool: "update_medication_schedule",
       arguments: { action: "add", medication: "Metformin", dose: "500 mg", times: ["20:00"] },
     });
+    expect(routeUtterance("caregiver", "I'm calling her now")).toEqual({ tool: "acknowledge_alert", arguments: { note: "I'm calling her now" } });
     const pending = { tool: "update_medication_schedule", arguments: { action: "add" } };
     expect(routeUtterance("caregiver", "Yes, go ahead", pending)?.arguments).toEqual({ action: "add", confirm: true });
   });
