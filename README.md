@@ -10,7 +10,7 @@ KinLoop is an Alexa+ add-on built as a self-hosted **MCP server** (spec 2025-11-
 
 - **Live:** [https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/simulator/](https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/simulator/) (demo) · MCP endpoint `https://aitklljfxl5zbu3rgkec7e726m0yzgtm.lambda-url.ap-southeast-2.on.aws/mcp`
 - **Track:** Alexa+ · **Mini challenge:** AWS Builder
-- Submission kit: [`submission/`](submission/) · Friction log: [`FRICTION_LOG.md`](FRICTION_LOG.md) · Build plan: [`PLAN.md`](PLAN.md)
+- Submission kit: [`submission/`](submission/) · Friction log: [`FRICTION_LOG.md`](FRICTION_LOG.md) · Security: [`SECURITY.md`](SECURITY.md) · Build plan: [`PLAN.md`](PLAN.md)
 
 ![Live demo: Kamala's kitchen and Arjun's phone](docs/screenshots/simulator.png)
 
@@ -26,13 +26,21 @@ KinLoop is an Alexa+ add-on built as a self-hosted **MCP server** (spec 2025-11-
 | Parent | "Any messages from my son?" | `play_family_messages` | Reads them, marks them heard. |
 | Family | "How's Mom doing today?" | `get_parent_status` | Doses, check-in, mood trend, alerts, and the precomputed Bedrock digest. Read-only. |
 | Family | "Tell Mom I'll visit on Sunday." | `send_message_to_parent` | Queued for her next conversation. |
-| Family | "Add Metformin 500 mg at 8 PM for Mom." | `update_medication_schedule` | Read back first; applied only after a clear yes (`confirm: true`). `destructiveHint`. |
+| Family | "I'm calling her now." | `acknowledge_alert` | Marks open alerts handled, and the parent hears "Arjun has seen your alert". Idempotent. |
+| Family | "Add Metformin 500 mg at 8 PM for Mom." / "I picked up 60 Metformin tablets." | `update_medication_schedule` | Add, change, remove or **refill**. Read back first; applied only after a clear yes (`confirm: true`). `destructiveHint`. |
+
+**Hindi and Hinglish.** Kamala can speak Hindi. "मुझे सीने में दर्द हो रहा है", "saans nahi aa rahi" and "bathroom mein gir gayi" all trip the same deterministic red-flag rules as English, including Hindi's trailing negation ("dard nahi hai" is not a red flag). "BP ki goli le li" logs Amlodipine.
+
+**Refill countdown.** Each logged dose counts one tablet off a tracked supply. Kamala hears "You have about 4 days of Metformin left", and Arjun gets one refill alert per supply.
+
+**Echo Show.** `get_today_plan` and `get_parent_status` return `_meta.ui.resourceUri`. The live demo fetches the card with `resources/read` and renders it in a sandboxed iframe through the MCP Apps `ui/initialize` and `ui/notifications/tool-result` handshake.
 
 **Escalation rules** ([`packages/core/src/rules`](packages/core/src/rules)):
 - A missed dose gets a gentle reminder to the parent at +60 min and a family alert at +120 min.
 - No check-in by 11:00 local alerts the family.
 - Chest pain, trouble breathing, a fall, fainting, confusion or stroke signs alert the family immediately.
 - Three or more low-mood days in a row trigger a "consider calling" nudge.
+- Five days or less of a medicine left triggers one refill alert per supply.
 - Alerts are deduplicated per incident.
 - The rules run on EventBridge Scheduler every 10 minutes, plus inline on every write.
 
@@ -100,9 +108,9 @@ Connect to `http://localhost:8787/mcp` (Streamable HTTP). For a quick bearer tok
 ## Tests
 
 ```bash
-pnpm test                                   # rules (52) + MCP/OAuth/Lambda/digest integration (46)
+pnpm test                                   # rules (69) + MCP/OAuth/Lambda/digest/simulator integration (63)
 pnpm test:coverage                          # rules engine, 100% lines/branches/functions
-pnpm --filter @kinloop/web test:e2e         # Playwright smoke: landing, privacy, red flag → phone, OAuth sign-in
+pnpm --filter @kinloop/web test:e2e         # Playwright: landing, privacy, red flag → phone, OAuth sign-in, Hindi + Echo Show + acknowledge
 pnpm latency [baseUrl] [n]                  # real HTTP round trips; fails if any tool's p95 ≥ 500 ms
 ```
 
