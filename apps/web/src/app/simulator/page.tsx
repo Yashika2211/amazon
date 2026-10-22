@@ -22,6 +22,9 @@ const PHRASES: Record<Persona, string[]> = {
   caregiver: ["How's Mom doing today?", "Tell Mom I'll visit on Sunday", "Add Metformin 500mg at 8 PM for Mom", "Yes, go ahead"],
 };
 
+/** Hindi and Hinglish for Kamala. The red-flag rules understand both scripts. */
+const PHRASES_HI = ["maine BP ki goli le li", "mujhe chakkar aa raha hai", "मुझे सीने में दर्द हो रहा है", "main theek hoon, neend nahi aayi", "beta ko bolo phone kare"];
+
 const PANE: Record<Persona, { title: string; sub: string; icon: string }> = {
   elder: { title: "Kamala's kitchen", sub: "Jaipur · Echo Show", icon: "🏠" },
   caregiver: { title: "Arjun, in Bengaluru", sub: "Alexa app on his phone", icon: "📱" },
@@ -52,6 +55,7 @@ function PaneView(props: {
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [pending, setPending] = useState<Pending>();
+  const [lang, setLang] = useState<"en-IN" | "hi-IN">("en-IN");
   const recRef = useRef<SpeechRec | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +97,7 @@ function PaneView(props: {
     }
     if (listening) return recRef.current?.stop();
     const rec = new Ctor();
-    rec.lang = "en-IN";
+    rec.lang = lang;
     rec.interimResults = false;
     rec.onresult = (e) => void send(e.results[0][0].transcript as string);
     rec.onend = () => setListening(false);
@@ -137,7 +141,17 @@ function PaneView(props: {
         ))}
       </div>
       <div className="row" style={{ gap: 8, marginBottom: 10 }}>
-        {PHRASES[persona].map((ph) => (
+        {persona === "elder" && (
+          <div className="row" role="group" aria-label="Language Kamala speaks" style={{ gap: 6, width: "100%" }}>
+            <span className="small muted">Kamala speaks:</span>
+            {(["en-IN", "hi-IN"] as const).map((l) => (
+              <button key={l} type="button" className={`btn btn-sm ${lang === l ? "btn-primary" : "btn-ghost"}`} aria-pressed={lang === l} onClick={() => setLang(l)}>
+                {l === "en-IN" ? "English" : "हिन्दी / Hinglish"}
+              </button>
+            ))}
+          </div>
+        )}
+        {(persona === "elder" && lang === "hi-IN" ? PHRASES_HI : PHRASES[persona]).map((ph) => (
           <button key={ph} className="btn btn-ghost btn-sm" disabled={busy || !token} onClick={() => void send(ph)}>{ph}</button>
         ))}
       </div>
