@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Rules engine (100% coverage gate)
+        run: pnpm --filter @kinloop/core test:coverage
+      - name: MCP, OAuth, Lambda-path and digest integration tests
+        run: pnpm --filter @kinloop/mcp-server test
+      - name: Build web app and Lambda bundles
+        run: |
+          pnpm --filter @kinloop/web build
+          pnpm --filter @kinloop/mcp-server build
+      - name: Validate SAM template
+        run: pip install cfn-lint && cfn-lint infra/template.yaml
+      - name: Playwright smoke test
+        run: |
+          pnpm --filter @kinloop/web exec playwright install --with-deps chromium
+          pnpm --filter @kinloop/web test:e2e
