@@ -74,7 +74,9 @@ export function demoRouter(deps: Deps): Router {
       const result = await simulateTurn(input, {
         mcpUrl,
         token: input.token,
-        bedrock: bedrock ? { client: bedrock, modelId: process.env.SIM_MODEL_ID ?? deps.config.bedrockModelId } : undefined,
+        bedrock: bedrock
+          ? { client: bedrock, modelIds: process.env.SIM_MODEL_ID ? [process.env.SIM_MODEL_ID] : [deps.config.bedrockModelId, deps.config.bedrockFallbackModelId] }
+          : undefined,
       });
       res.json(result);
     } catch (err) {

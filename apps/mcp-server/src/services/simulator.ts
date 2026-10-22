@@ -19,6 +19,8 @@ export interface TraceEntry {
   ms: number;
   isError: boolean;
   text: string;
+  /** Present when the tool points at an MCP Apps card, so the simulator can render the Echo Show screen. */
+  ui?: { resourceUri: string; structuredContent: Record<string, unknown> };
 }
 
 export interface TurnInput {
@@ -69,7 +71,15 @@ function resultText(r: CallToolResult): string {
 async function callTool(client: Client, trace: TraceEntry[], name: string, args: Record<string, unknown>): Promise<CallToolResult> {
   const started = performance.now();
   const r = (await client.callTool({ name, arguments: args })) as CallToolResult;
-  trace.push({ tool: name, arguments: args, ms: Math.round(performance.now() - started), isError: Boolean(r.isError), text: resultText(r) });
+  const uiUri = (r._meta as { ui?: { resourceUri?: string } } | undefined)?.ui?.resourceUri;
+  trace.push({
+    tool: name,
+    arguments: args,
+    ms: Math.round(performance.now() - started),
+    isError: Boolean(r.isError),
+    text: resultText(r),
+    ...(uiUri && r.structuredContent ? { ui: { resourceUri: uiUri, structuredContent: r.structuredContent as Record<string, unknown> } } : {}),
+  });
   return r;
 }
 
@@ -79,6 +89,11 @@ function pendingFrom(name: string, args: Record<string, unknown>, r: CallToolRes
 }
 
 // ───────────── Bedrock orchestrator ─────────────
+
+/** Some models (Nova) emit <thinking>…</thinking> before the answer; never speak it. */
+export function stripThinking(text: string): string {
+  return text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").replace(/\s+/g, " ").trim();
+}
 
 async function bedrockTurn(client: Client, input: TurnInput, bedrock: BedrockRuntimeClient, modelId: string, trace: TraceEntry[]): Promise<{ reply: string; pending?: TurnResult["pending"] }> {
   const { tools } = await client.listTools();
@@ -110,8 +125,11 @@ async function bedrockTurn(client: Client, input: TurnInput, bedrock: BedrockRun
     messages.push(msg);
     const uses = (msg.content ?? []).filter((c): c is ContentBlock.ToolUseMember => "toolUse" in c && Boolean(c.toolUse));
     if (r.stopReason !== "tool_use" || uses.length === 0) {
-      const reply = (msg.content ?? []).map((c) => ("text" in c ? c.text : "")).join(" ").trim();
-      return { reply: reply || trace.at(-1)?.text || "Okay.", ...(pending ? { pending } : {}) };
+      // Speak the tool's own text when a tool ran: it is written to be spoken and states only facts.
+      // Models paraphrase, and a paraphrase can change a fact (e.g. "two doses" vs "one dose").
+      const lastOk = [...trace].reverse().find((t) => !t.isError) ?? trace.at(-1);
+      const modelText = stripThinking((msg.content ?? []).map((c) => ("text" in c ? c.text : "")).join(" "));
+      return { reply: lastOk?.text || modelText || "Okay.", ...(pending ? { pending } : {}) };
     }
     const results: ContentBlock[] = [];
     for (const u of uses) {
@@ -195,7 +213,15 @@ export function routeUtterance(persona: Persona, raw: string, pending?: TurnInpu
 export interface SimulatorOptions {
   mcpUrl: string;
   token: string;
-  bedrock?: { client: BedrockRuntimeClient; modelId: string } | undefined;
+  /** Tried in order; a model that isn't available (no access yet) is skipped for 10 minutes. */
+  bedrock?: { client: BedrockRuntimeClient; modelIds: string[] } | undefined;
+}
+
+const unavailableUntil = new Map<string, number>();
+
+function isAccessError(err: unknown): boolean {
+  const name = (err as { name?: string }).name ?? "";
+  return ["ResourceNotFoundException", "AccessDeniedException", "ValidationException"].includes(name);
 }
 
 export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Promise<TurnResult> {
@@ -204,13 +230,18 @@ export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Pr
   const trace: TraceEntry[] = [];
   try {
     if (opts.bedrock) {
-      try {
-        const r = await bedrockTurn(client, input, opts.bedrock.client, opts.bedrock.modelId, trace);
-        return { reply: r.reply, trace, orchestrator: `bedrock:${opts.bedrock.modelId}`, ...(r.pending ? { pending: r.pending } : {}), totalMs: Math.round(performance.now() - started) };
-      } catch (err) {
-        log.warn("sim.bedrock_failed", { error: (err as Error).name ?? String(err) });
-        if (trace.length) {
-          return { reply: trace.at(-1)!.text, trace, orchestrator: "bedrock-partial", totalMs: Math.round(performance.now() - started) };
+      for (const modelId of opts.bedrock.modelIds) {
+        if ((unavailableUntil.get(modelId) ?? 0) > Date.now()) continue;
+        try {
+          const r = await bedrockTurn(client, input, opts.bedrock.client, modelId, trace);
+          return { reply: r.reply, trace, orchestrator: `bedrock:${modelId}`, ...(r.pending ? { pending: r.pending } : {}), totalMs: Math.round(performance.now() - started) };
+        } catch (err) {
+          log.warn("sim.bedrock_failed", { modelId, error: (err as Error).name ?? String(err) });
+          if (isAccessError(err)) unavailableUntil.set(modelId, Date.now() + 10 * 60_000);
+          // A tool already ran: don't repeat it on another model, just speak its result.
+          if (trace.length) {
+            return { reply: trace.at(-1)!.text, trace, orchestrator: `bedrock-partial:${modelId}`, totalMs: Math.round(performance.now() - started) };
+          }
         }
       }
     }

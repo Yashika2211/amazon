@@ -76,3 +76,10 @@ describe("Store", () => {
     expect((await store.listMessages("h"))[0]!.heardAt).toBe(now.toISOString());
   });
 });
+
+describe("simulator", () => {
+  it("never speaks a model's <thinking> block", async () => {
+    const { stripThinking } = await import("../src/services/simulator.js");
+    expect(stripThinking("<thinking>plan the reply</thinking> Good morning,\n Kamala.")).toBe("Good morning, Kamala.");
+  });
+});
