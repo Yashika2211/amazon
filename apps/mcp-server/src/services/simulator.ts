@@ -177,28 +177,40 @@ export function routeUtterance(persona: Persona, raw: string, pending?: TurnInpu
     if (tell) return { tool: "send_message_to_parent", arguments: { text: tell[1]!.replace(/[.?!]+$/, "") } };
     return { tool: "get_parent_status", arguments: {} };
   }
-  if (/\b(took|taken|had|just had)\b.*\b(pill|tablet|medicine|dose|amlodipine|metformin|atorvastatin|pills)\b/.test(t)) {
-    const all = /\b(all|morning pills|my pills|both)\b/.test(t);
-    return { tool: "log_medication", arguments: all ? { allDue: true } : { medication: raw } };
-  }
-  if (/\b(dizzy|pain|hurt|fell|fall|faint|breath|chest|sick|ache|vomit|fever|weak|numb|confus|slurr|headache|unwell)\b/.test(t)) {
+  // Symptoms first, so "I took my pill and now my chest hurts" still reaches the red-flag rules.
+  // English, Hinglish and Devanagari (Chrome hi-IN speech returns Devanagari).
+  if (
+    /\b(dizzy|pain|hurt|fell|fall|faint|breath|chest|sick|ache|vomit|fever|weak|numb|confus|slurr|headache|unwell|chakkar|dard|behosh|gir gayi|gir gaya|saans|bukhar|ulti|kamzori|lakwa)\b/.test(t) ||
+    /(चक्कर|दर्द|बेहोश|गिर|सांस|साँस|बुखार|उल्टी|कमजोरी|लकवा)/.test(t)
+  ) {
     return { tool: "report_symptom", arguments: { description: raw } };
   }
-  if (/\b(call me|ring me|phone me|to call)\b/.test(t)) {
-    const who = /\b(?:ask|tell)\s+(my\s+\w+|\w+)\s+to/.exec(t)?.[1];
-    return { tool: "request_callback", arguments: who ? { who } : {} };
+  if (
+    /\b(took|taken|had|just had)\b.*\b(pill|tablet|medicine|dose|amlodipine|metformin|atorvastatin|pills)\b/.test(t) ||
+    /\b(goli|dawai|dawa)\b.*\b(li|le li|kha li|khayi|liya)\b/.test(t) ||
+    /(गोली|दवाई|दवा).*(ली|खा ली|खाई|लिया)/.test(t)
+  ) {
+    const all = /\b(all|morning pills|my pills|both|saari|sab)\b/.test(t) || /(सारी|सब)/.test(t);
+    return { tool: "log_medication", arguments: all ? { allDue: true } : { medication: raw } };
   }
-  if (/\b(message|messages|say anything|said)\b/.test(t)) {
+  if (/\b(call me|ring me|phone me|to call|phone kare|phone karo|call kare|call karo)\b/.test(t) || /(फोन कर|कॉल कर)/.test(t)) {
+    const who = /\b(?:ask|tell)\s+(my\s+\w+|\w+)\s+to/.exec(t)?.[1] ?? /\b(beta|beti|bete|son|daughter)\b/.exec(t)?.[1];
+    const map: Record<string, string> = { beta: "son", bete: "son", beti: "daughter" };
+    return { tool: "request_callback", arguments: who ? { who: map[who] ?? who } : {} };
+  }
+  if (/\b(message|messages|say anything|said|sandesh)\b/.test(t) || /(संदेश|मैसेज)/.test(t)) {
     const from = /\bfrom\s+(my\s+\w+|\w+)/.exec(t)?.[1];
     return { tool: "play_family_messages", arguments: from ? { from } : {} };
   }
-  if (/\b(feel|feeling|slept|sleep|mood)\b/.test(t)) {
+  if (/\b(feel|feeling|slept|sleep|mood|theek|thik|neend|udaas|achha|accha)\b/.test(t) || /(ठीक|नींद|उदास|अच्छा)/.test(t)) {
     let mood = 3;
-    if (/\b(great|wonderful|excellent|very good)\b/.test(t)) mood = 5;
+    if (/\b(udaas|akela|akeli|mann nahi)\b/.test(t) || /(उदास|अकेल)/.test(t)) mood = 2;
+    else if (/\b(bahut achha|bahut accha)\b/.test(t)) mood = 5;
+    else if (/\b(great|wonderful|excellent|very good)\b/.test(t)) mood = 5;
     else if (/\b(good|fine|well)\b/.test(t) && !/not (so )?(good|well)/.test(t)) mood = 4;
     else if (/\b(terrible|awful|very low|miserable)\b/.test(t)) mood = 1;
     else if (/\b(low|sad|down|lonely|not good|not well)\b/.test(t)) mood = 2;
-    const sleep = /slept (badly|poorly|terribly)|bad sleep|couldn'?t sleep|didn'?t sleep/.test(t)
+    const sleep = /slept (badly|poorly|terribly)|bad sleep|couldn'?t sleep|didn'?t sleep|neend nahi?n? aayi|neend (kharab|kam)/.test(t) || /नींद नहीं/.test(t)
       ? "poor"
       : /slept (well|great|good)/.test(t)
         ? "good"
