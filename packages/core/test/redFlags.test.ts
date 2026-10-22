@@ -20,6 +20,21 @@ describe("classifySymptom", () => {
     ["no chest pain, just tired", []],
     ["I did not faint", []],
     ["Chest pain and I can’t breathe", ["chest_pain", "breathlessness"]],
+    // Hinglish (romanized Hindi)
+    ["mujhe seene mein dard ho raha hai", ["chest_pain"]],
+    ["saans nahi aa rahi", ["breathlessness"]],
+    ["bathroom mein gir gayi", ["fall"]],
+    ["chakkar aaya aur behosh ho gayi", ["fainting"]],
+    ["kuch samajh nahi aa raha", ["confusion"]],
+    ["muh tedha ho gaya hai", ["stroke_signs"]],
+    ["chakkar aa raha hai", []],
+    ["seene mein dard nahi hai, bas thakan hai", []],
+    // Devanagari (what Chrome hi-IN speech recognition returns)
+    ["मुझे सीने में दर्द हो रहा है", ["chest_pain"]],
+    ["मैं बाथरूम में गिर गई", ["fall"]],
+    ["सांस नहीं आ रही", ["breathlessness"]],
+    ["मुझे चक्कर आ रहा है", []],
+    ["सीने में दर्द नहीं है", []],
   ])("%s → %j", (text, flags) => {
     expect(classifySymptom(text)).toEqual(flags);
   });

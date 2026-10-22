@@ -5,11 +5,17 @@ import { RULES } from "./config.js";
  * Deterministic red-flag phrases. These are deliberately broad: a false alarm costs a phone call,
  * a miss can cost far more. No LLM is involved in this decision.
  */
+// English, romanized Hindi (Hinglish) and Devanagari: Chrome's hi-IN speech recognition returns
+// Devanagari, while people typing or code-mixing tend to use romanized Hindi.
 const PATTERNS: Record<RedFlag, RegExp[]> = {
   chest_pain: [
     /chest (pain|hurts?|tight(ness)?|pressure|heavy|heaviness)/,
     /(pain|tightness|pressure|heaviness) in (my )?chest/,
     /heart attack/,
+    /(seene|seeney|sine|chhati|chati|chhaati) (mein|me|main) (dard|bhaaripan|jalan|dabav)/,
+    /(सीने|छाती) (में|मे) (दर्द|भारीपन|दबाव)/,
+    /dil ka daura/,
+    /दिल का दौरा/,
   ],
   breathlessness: [
     /(can'?t|cannot|can not|unable to) breathe/,
@@ -17,19 +23,39 @@ const PATTERNS: Record<RedFlag, RegExp[]> = {
     /breathless/,
     /(trouble|difficulty|hard|struggling) (to )?breath(e|ing)/,
     /gasping/,
+    /saa?ns (nahi|nahin|nai) (aa|le paa?)/,
+    /saa?ns (phool|ukhad|lene mein (dikkat|takleef|pareshani))/,
+    /(सांस|साँस) (नहीं|फूल|उखड़|लेने में)/,
   ],
   fall: [
     /\bi (fell|have fallen|had a fall|took a fall)\b(?! asleep)/,
     /\b(fell|fallen) (down|over|in the|on the|off)/,
     /\bhad a fall\b/,
     /\bslipped\b/,
+    /\bgir (gayi|gaya|gai|gaye|padi|pada|padaa)\b/,
+    /\bfisal (gayi|gaya|gai)\b/,
+    /(गिर|फिसल) (गई|गया|गयी|पड़ी|पड़ा)/,
   ],
-  fainting: [/faint(ed|ing)?\b/, /passed out/, /blacked out/, /lost consciousness/, /\bcollapsed?\b/],
+  fainting: [
+    /faint(ed|ing)?\b/,
+    /passed out/,
+    /blacked out/,
+    /lost consciousness/,
+    /\bcollapsed?\b/,
+    /\bbehosh/,
+    /\bbehoshi/,
+    /aankhon (ke aage|ke saamne) andhera/,
+    /बेहोश/,
+    /आंखों के (आगे|सामने) अंधेरा/,
+  ],
   confusion: [
     /\bconfus(ed|ion)\b/,
     /disoriented/,
     /(don'?t|do not) know where i am/,
     /can'?t remember where i am/,
+    /(pata|maloom) nahi?n? (main|mai|mein) kaha?n (hoon|hu)/,
+    /kuch samajh nahi?n? aa raha/,
+    /(समझ नहीं आ रहा|पता नहीं मैं कहाँ)/,
   ],
   stroke_signs: [
     /\bstroke\b/,
@@ -38,10 +64,18 @@ const PATTERNS: Record<RedFlag, RegExp[]> = {
     /(numb|weak)(ness)? (on|in) (one|my (left|right)) side/,
     /(can'?t|cannot) (lift|move) my (arm|leg)/,
     /(trouble|difficulty) (speaking|talking)/,
+    /\blakwa\b/,
+    /(muh|munh|muhn) (tedha|tedhaa|latak)/,
+    /(zubaan|zuban|jeebh) (lad|ladkhada|atak)/,
+    /ek (taraf|side) (sunn|kamzori|sun pad)/,
+    /(लकवा|मुंह टेढ़ा|जुबान लड़खड़ा|एक तरफ सुन्न)/,
   ],
 };
 
+/** Negation before the phrase (English: "no chest pain"). */
 const NEGATIONS = /\b(no|not|never|without|don'?t have|didn'?t|no more)\b/;
+/** Negation right after the phrase (Hindi: "seene mein dard nahi hai", "सीने में दर्द नहीं"). */
+const TRAILING_NEGATION = /^\s*(nahi|nahin|nai|नहीं)(?![a-z])/;
 
 /** Returns the red flags present in free text. A match preceded closely by a negation is ignored. */
 export function classifySymptom(text: string): RedFlag[] {
@@ -52,7 +86,8 @@ export function classifySymptom(text: string): RedFlag[] {
       const m = p.exec(normalized);
       if (!m) continue;
       const before = normalized.slice(Math.max(0, m.index - 20), m.index);
-      if (NEGATIONS.test(before)) continue;
+      const after = normalized.slice(m.index + m[0].length, m.index + m[0].length + 12);
+      if (NEGATIONS.test(before) || TRAILING_NEGATION.test(after)) continue;
       found.push(flag);
       break;
     }
