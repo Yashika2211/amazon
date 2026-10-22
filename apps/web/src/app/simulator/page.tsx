@@ -2,10 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { api } from "@/lib/api";
+import { EchoShow, type UiCard } from "@/components/EchoShow";
 
 type Persona = "elder" | "caregiver";
 type Turn = { role: "user" | "assistant"; text: string };
-type Trace = { tool: string; arguments: Record<string, unknown>; ms: number; isError: boolean; text: string };
+type Trace = { tool: string; arguments: Record<string, unknown>; ms: number; isError: boolean; text: string; ui?: UiCard };
 type TraceRow = Trace & { persona: Persona; at: string; totalMs: number; orchestrator: string };
 type Pending = { tool: string; arguments: Record<string, unknown> } | undefined;
 type FeedAlert = { incidentKey: string; kind: string; severity: string; reason: string; details: Record<string, string | number>; at: string };
@@ -56,6 +57,7 @@ function PaneView(props: {
   const [listening, setListening] = useState(false);
   const [pending, setPending] = useState<Pending>();
   const [lang, setLang] = useState<"en-IN" | "hi-IN">("en-IN");
+  const [card, setCard] = useState<UiCard | null>(null);
   const recRef = useRef<SpeechRec | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +79,9 @@ function PaneView(props: {
         });
         setTurns((t) => [...t, { role: "assistant", text: r.reply }]);
         setPending(r.pending);
-        props.onTrace(r.trace.map((x) => ({ ...x, persona, at: new Date().toISOString(), totalMs: r.totalMs, orchestrator: r.orchestrator })));
+        const withUi = [...r.trace].reverse().find((x) => x.ui?.html);
+        if (withUi?.ui) setCard(withUi.ui);
+        props.onTrace(r.trace.map(({ ui: _ui, ...x }) => ({ ...x, persona, at: new Date().toISOString(), totalMs: r.totalMs, orchestrator: r.orchestrator })));
         speak(r.reply, props.speakOn);
       } catch (e) {
         setTurns((t) => [...t, { role: "assistant", text: `(${(e as Error).message})` }]);
@@ -120,6 +124,7 @@ function PaneView(props: {
         </span>
       </div>
       {props.children}
+      {card && <EchoShow card={card} />}
       <div ref={logRef} style={{ flex: 1, overflowY: "auto", margin: "12px 0", maxHeight: 360, minHeight: 200 }} aria-live="polite">
         {turns.length === 0 && <p className="muted">Tap the mic and talk, or pick a phrase below.</p>}
         {turns.map((t, i) => (
