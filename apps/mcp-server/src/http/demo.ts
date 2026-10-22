@@ -91,8 +91,9 @@ export function demoRouter(deps: Deps): Router {
   });
 
   /** Live alert feed for the "phone" in the simulator. */
-  r.get("/feed", async (req, res) => {
-    const since = typeof req.query.since === "string" ? req.query.since : new Date(Date.now() - 3600_000).toISOString();
+  r.get("/feed", async (_req, res) => {
+    // The window comes from the household clock, which may be pinned for the demo, not the browser's.
+    const since = new Date(deps.clock.now().getTime() - 12 * 3600_000).toISOString();
     const alerts = await deps.store.listAlerts(DEMO.householdId, since);
     const digest = await deps.store.getDigest(DEMO.householdId, localParts(deps.clock.now(), "Asia/Kolkata").date);
     res.setHeader("Cache-Control", "no-store").json({

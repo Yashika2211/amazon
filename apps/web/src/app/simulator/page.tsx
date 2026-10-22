@@ -181,7 +181,6 @@ export default function Simulator() {
   const [toast, setToast] = useState<FeedAlert | null>(null);
   const [error, setError] = useState<string | null>(null);
   const seen = useRef<Set<string> | null>(null);
-  const since = useRef(new Date(Date.now() - 6 * 3600_000).toISOString());
 
   const start = useCallback(async () => {
     try {
@@ -198,7 +197,7 @@ export default function Simulator() {
   useEffect(() => {
     const poll = async () => {
       try {
-        const f = await api<{ alerts: FeedAlert[]; digest: typeof digest }>(`/api/demo/feed?since=${encodeURIComponent(since.current)}`, { token: null });
+        const f = await api<{ alerts: FeedAlert[]; digest: typeof digest }>("/api/demo/feed", { token: null });
         setAlerts(f.alerts);
         setDigest(f.digest);
         if (seen.current === null) seen.current = new Set(f.alerts.map((a) => a.incidentKey));
