@@ -36,7 +36,7 @@ Lead with the strongest moment: the red flag landing on Arjun's phone falls insi
 4. **Arjun says:** "Alexa, how's Mom doing today?"
    Alexa: "Urgent: Kamala reported chest pain… Kamala has taken 1 of 2 doses due so far today… Metformin runs out in about 4 days."
 5. **Arjun says:** "I'm calling her now."
-   Alexa: "I've marked 2 alerts as handled, and I'll let Kamala know you've seen it."
+   Alexa confirms the open alerts are marked handled and that Kamala will be told.
    **Kitchen:** "What do I need to do today?" Alexa now opens with "Arjun has seen your alert," and the Echo Show card shows her medicines with status chips.
    **Say:** "The loop closes on both sides. Kamala knows help is coming."
 6. **Switch to the dashboard tab:** the urgent banner, timeline, medicine chips, 7-day adherence and mood charts.
