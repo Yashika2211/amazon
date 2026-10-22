@@ -23,10 +23,14 @@ KinLoop is an Alexa+ add-on: one self-hosted MCP server with two voices.
 - "I'm feeling dizzy and I nearly fainted." Fixed red-flag rules check for chest pain, breathlessness, a fall, fainting, confusion and stroke signs. A red flag alerts the family immediately, and Alexa tells the parent to call 112 or 911. Alexa doesn't call for them.
 - "Ask my son to call me." "Any messages from my daughter?"
 
+- **In Hindi too.** "मुझे सीने में दर्द हो रहा है" or "saans nahi aa rahi" trips the same deterministic red-flag rules as English. "BP ki goli le li" logs her Amlodipine.
+- "You have about 4 days of Metformin left. I've let Arjun know." Each logged dose counts down the supply.
+
 **The family, from their own Alexa or the dashboard:**
 - "How's Mom doing today?" Doses taken or missed, the last check-in, the mood trend, alerts, and a warm two-to-three-sentence summary written by Amazon Bedrock.
 - "Tell Dad I'll visit on Sunday." Queued and read out at the parent's next conversation.
-- "Add Metformin 500 mg at 8 PM for Mom." Always read back and confirmed before it changes anything.
+- "I'm calling her now." Alerts are marked handled, and Kamala's Alexa tells her "Arjun has seen your alert". The loop closes on both sides.
+- "Add Metformin 500 mg at 8 PM for Mom." / "I picked up 60 Metformin tablets." Always read back and confirmed before anything changes.
 
 **Escalation is deterministic:**
 - A missed dose gets a gentle reminder to the parent at 60 minutes and a family alert at 120.
@@ -59,7 +63,7 @@ flowchart LR
   - Spec 2025-11-25 over Streamable HTTP, fully stateless: a fresh server and transport per request, JSON responses, no `Mcp-Session-Id`. A test sends Alexa+'s exact `initialize` payload and expects version negotiation to 2025-03-26.
   - Nine tools with precise descriptions, Zod-validated inputs, and `readOnlyHint`, `destructiveHint` and `idempotentHint` annotations.
   - Every result returns `structuredContent` plus a spoken `content` text of the same facts. Schema errors come back as short spoken prompts, never stack traces.
-  - `get_today_plan` and `get_parent_status` point `_meta.ui.resourceUri` at a 3 KiB MCP Apps card for Echo Show.
+  - `get_today_plan` and `get_parent_status` point `_meta.ui.resourceUri` at a 3 KiB MCP Apps card for Echo Show. The live demo renders it through `resources/read` and the real `ui/initialize` and `ui/notifications/tool-result` handshake.
 - **Account linking:** a minimal OAuth 2.1 authorization server built into the app.
   - Authorization code with PKCE S256 only, the `resource` parameter, RFC 9728 Protected Resource Metadata and RFC 8414 AS metadata.
   - Rotating refresh tokens, including refresh without `resource`, as Alexa+ sends it.
@@ -100,7 +104,9 @@ flowchart LR
 - A safety design we can defend: no model decides who gets alerted.
 - Deployed and measured: 17–68 ms p95 server time per tool on Lambda + DynamoDB, well inside Alexa+'s 500 ms budget.
 - A deterministic guard on LLM output that caught a real false claim in production.
-- 100% coverage on the rules, 46 MCP, OAuth, Lambda-path and digest integration tests (including a cross-household isolation test), and a Playwright smoke test that runs the OAuth and PKCE sign-in in a real browser.
+- Hindi and Hinglish red-flag detection in both Devanagari and romanized script, with Hindi's trailing negation handled.
+- CI on every push: typecheck, the 100% coverage gate, integration tests, builds, SAM lint and Playwright.
+- 100% coverage on the rules (69 tests), 63 MCP, OAuth, Lambda-path, digest and simulator integration tests (including a cross-household isolation test), and a Playwright smoke test that runs the OAuth and PKCE sign-in in a real browser.
 - Spoken responses that sound like a person: "Got it. Your Amlodipine 5 mg for 8 AM is marked as taken. Next is Metformin 500 mg at 8 PM."
 
 ## What we learned
@@ -111,8 +117,8 @@ flowchart LR
 
 ## What's next for KinLoop
 
-- **Hindi and regional languages** (and Hinglish), the single biggest unlock for the elders who need this most.
+- **Spoken Hindi replies.** Hindi and Hinglish understanding already ships in the safety rules and the demo. Next are Hindi responses, then Tamil, Bengali and Marathi.
 - **Ring integration** for fall and doorbell context ("No motion in the kitchen since 9 AM"), with consent.
-- **Pharmacy refills:** count down doses and offer a refill reminder or order.
+- **Pharmacy ordering:** the refill countdown already ships. Next is ordering the refill from a partner pharmacy with one confirmation.
 - Proactive notifications to the family's own Echo when the platform supports it.
 - Audio messages from the family, in their own voice.

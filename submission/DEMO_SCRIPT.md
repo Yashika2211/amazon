@@ -29,7 +29,14 @@ Lead with the strongest moment: the red flag landing on Arjun's phone falls insi
    **Right pane:** the red alert slides in on Arjun's phone. Cut to the real email or SMS arriving.
    **Say:** "That decision wasn't made by an AI. It's a fixed rule: fainting is a red flag, so the family is alerted instantly, with the reason and the time. Alexa tells her to call emergency services, because KinLoop never pretends to be one."
 
+   **Toggle Kamala to हिन्दी, then say:** "मुझे सीने में दर्द हो रहा है" ("I have chest pain").
+   **Say:** "And she can say it in Hindi. The same rules catch it, in either script."
+
 ### 1:30–2:10 · Arjun asks his own Alexa (right pane, then the dashboard)
+0. **Arjun says:** "I'm calling her now."
+   Alexa: "I've marked the alert as handled, and I'll let Kamala know."
+   **Kitchen:** "What do I need to do today?" and Alexa now opens with "Arjun has seen your alert." The Echo Show card shows her medicines with status chips.
+   **Say:** "The loop closes on both sides. Kamala knows help is coming."
 4. **Say:** "Alexa, how's Mom doing today?"
    Alexa: "Urgent: Kamala reported fainting… Kamala has taken 1 of 2 doses due so far today. Kamala hasn't checked in yet today."
 5. **Switch to the dashboard tab:** the urgent banner, timeline, medicine chips, 7-day adherence and mood charts.
