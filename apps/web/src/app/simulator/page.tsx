@@ -274,7 +274,7 @@ export default function Simulator() {
                 {" · "}
                 {new Date(toast.at).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit" })} IST
               </p>
-              <p className="small" style={{ margin: "4px 0 0", fontWeight: 500 }}>Sent by Amazon SNS (email + SMS)</p>
+              <p className="small" style={{ margin: "4px 0 0", fontWeight: 500 }}>Sent by Amazon SNS</p>
             </div>
           )}
         </PaneView>
