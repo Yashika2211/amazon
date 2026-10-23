@@ -7,7 +7,7 @@ const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
 await p.goto("http://localhost:8787/simulator/");
 await p.getByLabel("Speak replies").uncheck();
 const k = p.getByRole("region", { name: "Kamala's kitchen" });
-for (const t of ["Alexa, what do I need to do today?", "I just took my blood pressure pill", "I'm feeling dizzy and I nearly fainted"]) {
+for (const t of ["I just took my blood pressure pill", "I'm feeling dizzy and I nearly fainted", "Alexa, what do I need to do today?"]) {
   await k.getByRole("button", { name: t }).click();
   await p.waitForTimeout(700);
 }
