@@ -34,7 +34,7 @@ About 390 words at a calm pace. Read the **bold** lines aloud; the *italic* line
 
 *Toggle हिन्दी, then click "मुझे सीने में दर्द हो रहा है".*
 
-**"Chest pain in Hindi triggers the same rule."**
+**"Chest pain in Hindi triggers the same rule. The trace shows 'rules: red flag'. Safety never waits for a language model."**
 
 ### 1:25–2:05 · Arjun's side
 *Right pane, click: "How's Mom doing today?"*

@@ -29,6 +29,8 @@ KinLoop is an Alexa+ add-on built as a self-hosted **MCP server** (spec 2025-11-
 | Family | "I'm calling her now." | `acknowledge_alert` | Marks open alerts handled, and the parent hears "Arjun has seen your alert". Idempotent. |
 | Family | "Add Metformin 500 mg at 8 PM for Mom." / "I picked up 60 Metformin tablets." | `update_medication_schedule` | Add, change, remove or **refill**. Read back first; applied only after a clear yes (`confirm: true`). `destructiveHint`. |
 
+**Safety never waits on a model.** In the simulated Alexa+ client, the deterministic red-flag rules run on the parent's words before Bedrock. A match calls `report_symptom` directly (shown as `rules:red-flag` in the trace).
+
 **Hindi and Hinglish.** Kamala can speak Hindi. "मुझे सीने में दर्द हो रहा है", "saans nahi aa rahi" and "bathroom mein gir gayi" all trip the same deterministic red-flag rules as English, including Hindi's trailing negation ("dard nahi hai" is not a red flag). "BP ki goli le li" logs Amlodipine.
 
 **Refill countdown.** Each logged dose counts one tablet off a tracked supply. Kamala hears "You have about 4 days of Metformin left", and Arjun gets one refill alert per supply.
