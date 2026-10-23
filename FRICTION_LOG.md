@@ -129,5 +129,12 @@ Real problems hit while building KinLoop, in the order we hit them. Severity sca
   - For "I just took my blood pressure pill" it sent `allDue: false` without the medicine words.
   - Orchestrated turns took about 2.5–4.8 s, mostly model time; the MCP tool calls stayed in the milliseconds.
 - **Severity:** medium.
-- **Workaround:** Strip `<thinking>` blocks. When a tool ran, speak the tool's own text rather than the model's paraphrase. Tightened the `medication` argument description so models pass the user's words.
+- **Worse, in the final live run:**
+  - Nova answered a Hindi chest-pain report ("मुझे सीने में दर्द हो रहा है") with "Okay." and called no tool.
+  - For the English fainting report it called `report_symptom` and then `play_family_messages`, so the spoken reply was the message, not "call 112". The family alert itself still went out.
+- **Workaround:**
+  - Strip `<thinking>` blocks, and speak the tool's own text rather than the model's paraphrase.
+  - A symptom report always leads the reply, and the first successful call beats duplicate retries.
+  - Most importantly, the deterministic red-flag rules now run on the parent's words **before** any model. On a match, `report_symptom` is called directly, so a model can never stand between "chest pain" and the family.
+  - Tightened the `medication` argument description so models pass the user's words.
 - **Suggestion:** Document Nova's reasoning-tag behavior on the Converse page, and offer an option to suppress it.
