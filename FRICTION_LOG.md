@@ -120,3 +120,14 @@ Real problems hit while building KinLoop, in the order we hit them. Severity sca
 - **Severity:** high for a caregiving product. It's a false claim to the family.
 - **Workaround:** A deterministic `checkDigest` runs on every model output. It rejects "missed" claims when nothing was missed, medicines that aren't on the schedule, advice wording, and summaries that drop today's red flag. A rejected output falls through to the next model, then to the deterministic template. In production it rejected Nova's output and the accurate template went out.
 - **Suggestion:** None for AWS. This is the reason the design keeps the LLM away from decisions and checks its words.
+
+### 14. Nova Lite as a tool-use orchestrator leaks `<thinking>` and paraphrases tool results
+- **Task:** Use `apac.amazon.nova-lite-v1:0` with Converse tool use as the simulated Alexa+ orchestrator, while the Claude use-case form was pending.
+- **Actual:**
+  - It picked the right MCP tool every time, but its final text began with `<thinking>…</thinking>`, which a voice assistant would read aloud.
+  - It rewrote the tool's carefully worded speech, in one case changing a fact ("hasn't taken any of her two doses").
+  - For "I just took my blood pressure pill" it sent `allDue: false` without the medicine words.
+  - Orchestrated turns took about 2.5–4.8 s, mostly model time; the MCP tool calls stayed in the milliseconds.
+- **Severity:** medium.
+- **Workaround:** Strip `<thinking>` blocks. When a tool ran, speak the tool's own text rather than the model's paraphrase. Tightened the `medication` argument description so models pass the user's words.
+- **Suggestion:** Document Nova's reasoning-tag behavior on the Converse page, and offer an option to suppress it.
