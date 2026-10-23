@@ -467,7 +467,8 @@ export async function getParentStatus(deps: Deps, ctx: AuthContext): Promise<Out
   } else {
     parts.push(summary);
   }
-  const otherOpen = open.filter((a) => a.severity !== "urgent");
+  // Refills are spoken from the supply itself below, so don't repeat them as an alert.
+  const otherOpen = open.filter((a) => a.severity !== "urgent" && a.kind !== "refill_due");
   if (otherOpen.length) parts.push(`There ${otherOpen.length === 1 ? "is" : "are"} also ${plural(otherOpen.length, "open alert")}: ${otherOpen.map((a) => a.reason).join(" ")}`);
   if (trend === "declining") parts.push(`${l.elder.name}'s mood has been lower than usual this week.`);
   parts.push(...refillLines(meds, false));

@@ -276,6 +276,7 @@ describe("family tools", () => {
 
     const status = await callTool(h.app, son, "get_parent_status");
     expect(spoken(status)).toContain("Metformin runs out in about 4 days.");
+    expect(spoken(status)).not.toContain("Time to order a refill");
 
     const preview = await callTool(h.app, son, "update_medication_schedule", { action: "refill", medication: "metformin", pills: 60 });
     expect(spoken(preview)).toBe("Just to confirm: refill Metformin with 60 tablets, about 30 days of supply. Should I go ahead?");
