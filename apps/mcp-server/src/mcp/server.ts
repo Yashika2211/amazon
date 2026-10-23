@@ -137,7 +137,7 @@ export function createMcpServer(deps: Deps, ctx: AuthContext): McpServer {
     {
       title: "Report a symptom",
       description:
-        "Records a physical symptom or health event the parent describes, e.g. \"I'm feeling dizzy\" or \"I fell in the bathroom\". Fixed safety rules (not AI) check for red flags: chest pain, trouble breathing, a fall, fainting, confusion or stroke signs. A red flag alerts the family immediately and the response tells the parent to call emergency services. Always pass the parent's own words.",
+        "Records a physical symptom or health event the parent describes, e.g. \"I'm feeling dizzy\" or \"I fell in the bathroom\". Fixed safety rules (not AI) check for red flags: chest pain, trouble breathing, a fall, fainting, confusion or stroke signs. A red flag alerts the family immediately and the response tells the parent to call emergency services. Works in English, Hindi and Hinglish (e.g. \"seene mein dard\", \"मुझे चक्कर आ रहा है\"). Always pass the parent's own words, unchanged and untranslated.",
       inputSchema: {
         description: z.string().min(2).max(400).describe("The parent's own words describing the symptom, unchanged."),
       },
