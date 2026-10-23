@@ -17,3 +17,4 @@ CLAUDE.md
 test-results/
 playwright-report/
 apps/mcp-server/public/
+*.tsbuildinfo
