@@ -37,3 +37,17 @@ describe("simulator keyword router (fallback when Bedrock is unavailable)", () =
     expect(routeUtterance("caregiver", "Yes, go ahead", pending)?.arguments).toEqual({ action: "add", confirm: true });
   });
 });
+
+describe("chooseReply", () => {
+  const e = (tool: string, text: string, isError = false) => ({ tool, text, isError, arguments: {}, ms: 1 });
+  it("always leads with the symptom report, even if another tool ran after it", async () => {
+    const { chooseReply } = await import("../src/services/simulator.js");
+    expect(chooseReply([e("report_symptom", "Please call 112 now."), e("play_family_messages", "You have 1 new message.")])).toBe("Please call 112 now.");
+  });
+  it("prefers the first successful call over a duplicate retry", async () => {
+    const { chooseReply } = await import("../src/services/simulator.js");
+    expect(chooseReply([e("log_medication", "Marked as taken."), e("log_medication", "Already logged.")])).toBe("Marked as taken.");
+    expect(chooseReply([e("x", "failed", true), e("y", "worked")])).toBe("worked");
+    expect(chooseReply([])).toBe("");
+  });
+});

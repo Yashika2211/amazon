@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, ConverseCommand, type ContentBlock, type Message,
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { classifySymptom } from "@kinloop/core";
 import { log } from "../log.js";
 
 /**
@@ -90,6 +91,19 @@ function pendingFrom(name: string, args: Record<string, unknown>, r: CallToolRes
 
 // ───────────── Bedrock orchestrator ─────────────
 
+/**
+ * What Alexa says after tools ran. Speak tool text, not a model paraphrase: it is written to be
+ * spoken and states only facts. A symptom report always leads, so "call 112" can never be drowned
+ * out by another tool. Otherwise the first successful call wins (models sometimes call a tool
+ * twice, and the retry only says "already logged").
+ */
+export function chooseReply(trace: TraceEntry[]): string {
+  const ok = trace.filter((t) => !t.isError);
+  const symptom = ok.find((t) => t.tool === "report_symptom");
+  if (symptom) return symptom.text;
+  return (ok[0] ?? trace[0])?.text ?? "";
+}
+
 /** Some models (Nova) emit <thinking>…</thinking> before the answer; never speak it. */
 export function stripThinking(text: string): string {
   return text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").replace(/\s+/g, " ").trim();
@@ -125,11 +139,8 @@ async function bedrockTurn(client: Client, input: TurnInput, bedrock: BedrockRun
     messages.push(msg);
     const uses = (msg.content ?? []).filter((c): c is ContentBlock.ToolUseMember => "toolUse" in c && Boolean(c.toolUse));
     if (r.stopReason !== "tool_use" || uses.length === 0) {
-      // Speak the tool's own text when a tool ran: it is written to be spoken and states only facts.
-      // Models paraphrase, and a paraphrase can change a fact (e.g. "two doses" vs "one dose").
-      const lastOk = [...trace].reverse().find((t) => !t.isError) ?? trace.at(-1);
       const modelText = stripThinking((msg.content ?? []).map((c) => ("text" in c ? c.text : "")).join(" "));
-      return { reply: lastOk?.text || modelText || "Okay.", ...(pending ? { pending } : {}) };
+      return { reply: chooseReply(trace) || modelText || "Okay.", ...(pending ? { pending } : {}) };
     }
     const results: ContentBlock[] = [];
     for (const u of uses) {
@@ -147,7 +158,7 @@ async function bedrockTurn(client: Client, input: TurnInput, bedrock: BedrockRun
     }
     messages.push({ role: "user", content: results });
   }
-  return { reply: trace.at(-1)?.text ?? "Sorry, I couldn't finish that.", ...(pending ? { pending } : {}) };
+  return { reply: chooseReply(trace) || "Sorry, I couldn't finish that.", ...(pending ? { pending } : {}) };
 }
 
 // ───────────── Keyword fallback ─────────────
@@ -257,6 +268,12 @@ export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Pr
   const client = await connect(opts.mcpUrl, opts.token);
   const trace: TraceEntry[] = [];
   try {
+    // Rules decide: if the deterministic red-flag rules match what the parent said, report it
+    // directly. A model must never be the thing standing between "chest pain" and the family.
+    if (input.persona === "elder" && classifySymptom(input.text).length > 0) {
+      const r = await callTool(client, trace, "report_symptom", { description: input.text });
+      return { reply: resultText(r), trace, orchestrator: "rules:red-flag", totalMs: Math.round(performance.now() - started) };
+    }
     if (opts.bedrock) {
       for (const modelId of opts.bedrock.modelIds) {
         if ((unavailableUntil.get(modelId) ?? 0) > Date.now()) continue;
@@ -268,7 +285,7 @@ export async function simulateTurn(input: TurnInput, opts: SimulatorOptions): Pr
           if (isAccessError(err)) unavailableUntil.set(modelId, Date.now() + 10 * 60_000);
           // A tool already ran: don't repeat it on another model, just speak its result.
           if (trace.length) {
-            return { reply: trace.at(-1)!.text, trace, orchestrator: `bedrock-partial:${modelId}`, totalMs: Math.round(performance.now() - started) };
+            return { reply: chooseReply(trace), trace, orchestrator: `bedrock-partial:${modelId}`, totalMs: Math.round(performance.now() - started) };
           }
         }
       }
